@@ -1,0 +1,193 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/magazzino.json';
+import { Shirt, Package, ShoppingBag, Clock, Truck, Wrench, Euro, Tags } from 'lucide-astro';
+
+const { maglie } = data;
+const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
+
+const getStatoBadge = (stato: string) => {
+  switch (stato) {
+    case 'Venduta':
+      return 'bg-green-100 text-green-800';
+    case 'In magazzino':
+      return 'bg-blue-100 text-blue-800';
+    case 'Da preparare':
+      return 'bg-orange-100 text-orange-800';
+    case 'Da arrivare':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Da fare': // retrocompatibilità
+      return 'bg-orange-100 text-orange-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Calcola totali per stato
+const perStato = {
+  vendute: maglie.filter(m => m.stato === 'Venduta').length,
+  inMagazzino: maglie.filter(m => m.stato === 'In magazzino').length,
+  daPreparare: maglie.filter(m => m.stato === 'Da preparare' || m.stato === 'Da fare').length,
+  daArrivare: maglie.filter(m => m.stato === 'Da arrivare').length,
+};
+---
+
+<Layout title="Maglie">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
+      <div class="p-3 bg-amber-100 rounded-xl">
+        <Shirt class="w-8 h-8 text-amber-600" />
+      </div>
+      Inventario Maglie
+    </h1>
+    <div class="flex flex-wrap gap-3">
+      <div class="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg flex items-center gap-2">
+        <Truck class="w-4 h-4" />
+        <span class="text-sm">Da Arrivare:</span>
+        <span class="font-bold">{perStato.daArrivare}</span>
+      </div>
+      <div class="bg-orange-100 text-orange-800 px-3 py-2 rounded-lg flex items-center gap-2">
+        <Wrench class="w-4 h-4" />
+        <span class="text-sm">Da Preparare:</span>
+        <span class="font-bold">{perStato.daPreparare}</span>
+      </div>
+      <div class="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg flex items-center gap-2">
+        <Package class="w-4 h-4" />
+        <span class="text-sm">In Magazzino:</span>
+        <span class="font-bold">{perStato.inMagazzino}</span>
+      </div>
+      <div class="bg-green-100 text-green-800 px-3 py-2 rounded-lg flex items-center gap-2">
+        <ShoppingBag class="w-4 h-4" />
+        <span class="text-sm">Vendute:</span>
+        <span class="font-bold">{perStato.vendute}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Foto</th>
+          <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Maglia</th>
+          <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Stagione</th>
+          <th class="px-6 py-4 text-left text-sm font-semibold text-slate-600">Patch</th>
+          <th class="px-6 py-4 text-right text-sm font-semibold text-slate-600">Costo Maglia</th>
+          <th class="px-6 py-4 text-right text-sm font-semibold text-slate-600">Costo Totale</th>
+          <th class="px-6 py-4 text-right text-sm font-semibold text-slate-600">Prezzo Vendita</th>
+          <th class="px-6 py-4 text-center text-sm font-semibold text-slate-600">Stato</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {maglie.map((m) => (
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4">
+              {m.immagine ? (
+                <img src={m.immagine} alt={m.maglia} class="w-14 h-14 object-cover rounded-lg shadow" />
+              ) : (
+                <div class="w-14 h-14 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <Shirt class="w-7 h-7 text-gray-400" />
+                </div>
+              )}
+            </td>
+            <td class="px-6 py-4">
+              <div class="font-medium text-slate-800">{m.maglia}</div>
+            </td>
+            <td class="px-6 py-4 text-slate-600">{m.stagione}</td>
+            <td class="px-6 py-4">
+              {m.patches.length > 0 ? (
+                <div class="flex flex-wrap gap-1">
+                  {m.patches.map((patch) => (
+                    <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">{patch}</span>
+                  ))}
+                </div>
+              ) : (
+                <span class="text-gray-400 text-sm">Nessuna</span>
+              )}
+            </td>
+            <td class="px-6 py-4 text-right text-slate-600">{formatEuro(m.costoMaglia)}</td>
+            <td class="px-6 py-4 text-right font-medium text-slate-800">{formatEuro(m.costoTotale)}</td>
+            <td class="px-6 py-4 text-right">
+              {m.prezzoVendita > 0 ? (
+                <span class="font-medium text-green-600">{formatEuro(m.prezzoVendita)}</span>
+              ) : (
+                <span class="text-gray-400">-</span>
+              )}
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class={`px-3 py-1 rounded-full text-xs font-medium ${getStatoBadge(m.stato)}`}>
+                {m.stato}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cards per mobile -->
+  <div class="md:hidden space-y-4 mt-6">
+    {maglie.map((m) => (
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="flex gap-4 mb-3">
+          {m.immagine ? (
+            <img src={m.immagine} alt={m.maglia} class="w-20 h-20 object-cover rounded-lg shadow" />
+          ) : (
+            <div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shirt class="w-10 h-10 text-gray-400" />
+            </div>
+          )}
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-semibold text-slate-800">{m.maglia}</h3>
+                <p class="text-sm text-gray-500">{m.stagione}</p>
+              </div>
+              <span class={`px-3 py-1 rounded-full text-xs font-medium ${getStatoBadge(m.stato)}`}>
+                {m.stato}
+              </span>
+            </div>
+          </div>
+        </div>
+        {m.patches.length > 0 && (
+          <div class="flex flex-wrap gap-1 mb-3">
+            {m.patches.map((patch) => (
+              <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">{patch}</span>
+            ))}
+          </div>
+        )}
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Costo Totale: <strong>{formatEuro(m.costoTotale)}</strong></span>
+          {m.prezzoVendita > 0 && (
+            <span class="text-green-600">Vendita: <strong>{formatEuro(m.prezzoVendita)}</strong></span>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- Riepilogo -->
+  <div class="mt-8 bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-xl font-semibold text-slate-700 mb-4">Riepilogo</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="text-center p-4 bg-slate-50 rounded-lg">
+        <div class="text-sm text-slate-600">Valore Totale Maglie</div>
+        <div class="text-2xl font-bold text-slate-700">
+          {formatEuro(maglie.reduce((acc, m) => acc + m.costoMaglia, 0))}
+        </div>
+      </div>
+      <div class="text-center p-4 bg-blue-50 rounded-lg">
+        <div class="text-sm text-blue-600">Valore Patch Applicate</div>
+        <div class="text-2xl font-bold text-blue-700">
+          {formatEuro(maglie.reduce((acc, m) => acc + m.costoPatch, 0))}
+        </div>
+      </div>
+      <div class="text-center p-4 bg-amber-50 rounded-lg">
+        <div class="text-sm text-amber-600">Investimento Totale</div>
+        <div class="text-2xl font-bold text-amber-700">
+          {formatEuro(maglie.reduce((acc, m) => acc + m.costoTotale, 0))}
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

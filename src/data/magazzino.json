@@ -1,0 +1,380 @@
+{
+  "dashboard": {
+    "patch": {
+      "totaleArticoli": 17,
+      "totaleVenduti": 28,
+      "valoreInventario": 86.62095238,
+      "ricavoTotale": 258,
+      "profittoLordo": 166.2509524
+    },
+    "tute": {
+      "articoliMagazzino": 2,
+      "articoliVenduti": 2,
+      "valoreInventario": 41,
+      "ricavoTotale": 52,
+      "profitto": 15
+    }
+  },
+  "patch": [
+    {
+      "immagine": "/uploads/1769443627640-e47l9k.webp",
+      "prodotto": "Patch Serie A 04/08",
+      "inMagazzino": 2,
+      "venduti": 19,
+      "quantitaIniziale": 21,
+      "costoTotale": 45.37,
+      "costoUnitario": 2.16047619,
+      "ricavoVendite": 207,
+      "profitto": 165.9509524
+    },
+    {
+      "immagine": "/uploads/1769443851964-0oafjg.png",
+      "prodotto": "Nameset 10/12 Del Piero",
+      "inMagazzino": 7,
+      "venduti": 3,
+      "quantitaIniziale": 10,
+      "costoTotale": 54.5,
+      "costoUnitario": 5.45,
+      "ricavoVendite": 15,
+      "profitto": -1.35
+    },
+    {
+      "immagine": "/uploads/1769443899050-evbhhq.png",
+      "prodotto": "Nameset Messi 12/15",
+      "inMagazzino": 7,
+      "venduti": 3,
+      "quantitaIniziale": 10,
+      "costoTotale": 54.5,
+      "costoUnitario": 5.45,
+      "ricavoVendite": 11,
+      "profitto": -5.35
+    },
+    {
+      "immagine": "/uploads/1769443873601-y9t071.png",
+      "prodotto": "Patch Serie A 10/15",
+      "inMagazzino": 1,
+      "venduti": 3,
+      "quantitaIniziale": 4,
+      "costoTotale": 24,
+      "costoUnitario": 6,
+      "ricavoVendite": 25,
+      "profitto": 7
+    }
+  ],
+  "tute": [
+    {
+      "tipo": "Sopra tuta",
+      "squadra": "Bayern Monaco",
+      "categoria": "Allenamento",
+      "stagione": "2014/15",
+      "descrizione": "Collezione allenamento - Pep Guardiola",
+      "costo": 14,
+      "prezzoVendita": 12,
+      "stato": "Venduto",
+      "profitto": -2
+    },
+    {
+      "tipo": "Tuta intera",
+      "squadra": "Tottenham",
+      "categoria": "Allenamento",
+      "stagione": "2020/21",
+      "descrizione": null,
+      "costo": 30,
+      "prezzoVendita": 0,
+      "stato": "In magazzino",
+      "profitto": 0
+    },
+    {
+      "tipo": "Tuta intera",
+      "squadra": "Paris Saint-Germain",
+      "categoria": "Allenamento",
+      "stagione": "2014/17",
+      "descrizione": "Una delle stagioni tra il 2014 e il 2017",
+      "costo": 23,
+      "prezzoVendita": 40,
+      "stato": "Venduto",
+      "profitto": 17
+    },
+    {
+      "tipo": "Sopra",
+      "squadra": "Fenerbahçe",
+      "categoria": "Track Jacket",
+      "stagione": null,
+      "descrizione": "Adidas Track Jacket",
+      "costo": 11,
+      "prezzoVendita": 0,
+      "stato": "In magazzino",
+      "profitto": 0
+    }
+  ],
+  "maglie": [
+    {
+      "maglia": "Juventus",
+      "stagione": "2011/12",
+      "costoMaglia": 29.19,
+      "patches": [
+        "Nameset 10/12 Del Piero"
+      ],
+      "costoPatch": 5.45,
+      "costoTotale": 34.64,
+      "prezzoVendita": 0,
+      "stato": "Venduta",
+      "profitto": -34.64
+    },
+    {
+      "maglia": "Barcelona",
+      "stagione": "2013/14",
+      "costoMaglia": 26.15,
+      "patches": [
+        "Nameset Messi 12/15"
+      ],
+      "costoPatch": 5.45,
+      "costoTotale": 31.6,
+      "prezzoVendita": 90,
+      "stato": "In magazzino",
+      "profitto": 0
+    },
+    {
+      "maglia": "Barcelona",
+      "stagione": "2012/13",
+      "costoMaglia": 33.69,
+      "patches": [
+        "Nameset Messi 12/15"
+      ],
+      "costoPatch": 5.45,
+      "costoTotale": 39.14,
+      "prezzoVendita": 0,
+      "stato": "Da fare",
+      "profitto": 0
+    },
+    {
+      "immagine": "",
+      "maglia": "Juventus",
+      "stagione": "2019/20",
+      "costoMaglia": 45,
+      "patches": [],
+      "costoPatch": 0,
+      "costoTotale": 45,
+      "prezzoVendita": 0,
+      "stato": "Da fare",
+      "profitto": 0
+    },
+    {
+      "maglia": "Bayern Monaco",
+      "stagione": "2017/18",
+      "costoMaglia": 40,
+      "patches": [],
+      "costoPatch": 0,
+      "costoTotale": 40,
+      "prezzoVendita": 0,
+      "stato": "Da fare",
+      "profitto": 0
+    },
+    {
+      "maglia": "Juventus",
+      "stagione": "2011/12",
+      "costoMaglia": 27.79,
+      "patches": [
+        "Nameset 10/12 Del Piero"
+      ],
+      "costoPatch": 5.45,
+      "costoTotale": 33.24,
+      "prezzoVendita": 0,
+      "stato": "Da fare",
+      "profitto": 0
+    }
+  ],
+  "vendite": [
+    {
+      "data": "2025-12-22",
+      "categoria": "Patch",
+      "prodotto": "Nameset 10/12 Del Piero",
+      "quantita": 1,
+      "totale": 15,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-17",
+      "categoria": "Patch",
+      "prodotto": "Nameset Messi 12/15",
+      "quantita": 1,
+      "totale": 11,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-01",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 2,
+      "totale": 25,
+      "piattaforma": "Ebay",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-04",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 3,
+      "totale": 30,
+      "piattaforma": "Vinted",
+      "cliente": "Sospeso"
+    },
+    {
+      "data": "2026-01-09",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 3,
+      "totale": 38,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-18",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 2,
+      "totale": 25,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-17",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 3,
+      "totale": 25,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-17",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 1,
+      "totale": 12,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-21",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 1,
+      "totale": 10,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-20",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 1,
+      "totale": 12,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-21",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 2,
+      "totale": 20,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-21",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 04/08",
+      "quantita": 1,
+      "totale": 10,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-18",
+      "categoria": "Patch",
+      "prodotto": "Patch Serie A 10/15",
+      "quantita": 3,
+      "totale": 25,
+      "piattaforma": "Vinted",
+      "cliente": null
+    },
+    {
+      "data": "2026-01-17",
+      "categoria": "Tuta",
+      "prodotto": "Tuta intera Paris Saint-Germain 2014/17",
+      "quantita": 1,
+      "totale": 40,
+      "piattaforma": "Vinted",
+      "cliente": null
+    }
+  ],
+  "richieste": [
+    {
+      "dataRichiesta": "2026-01-21",
+      "url": "https://www.vinted.it/inbox/20295926917",
+      "cliente": "salviobar",
+      "categoria": "Patch",
+      "descrizione": "6 Patch 04/08",
+      "budget": 50,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-17",
+      "url": "https://www.vinted.it/inbox/19835801835",
+      "cliente": "robbyme74",
+      "categoria": "Patch",
+      "descrizione": "1 Nameset di Nedved 2005/06",
+      "budget": 15,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-17",
+      "url": null,
+      "cliente": "robbyme74",
+      "categoria": "Patch",
+      "descrizione": "2 Jeep sponsor",
+      "budget": 20,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-17",
+      "url": null,
+      "cliente": "robbyme74",
+      "categoria": "Patch",
+      "descrizione": "1 Scudetto Juve",
+      "budget": 10,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-17",
+      "url": null,
+      "cliente": "robbyme74",
+      "categoria": "Patch",
+      "descrizione": "1 Patch serie A 2017 / 2018",
+      "budget": 0,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-16",
+      "url": null,
+      "cliente": null,
+      "categoria": "Patch",
+      "descrizione": "Marchisio Juve home 2014 2015",
+      "budget": 15,
+      "stato": "In attesa"
+    },
+    {
+      "dataRichiesta": "2026-01-20",
+      "url": null,
+      "cliente": "Manuel",
+      "categoria": "Patch",
+      "descrizione": "1 Patch serie A 2009 / 2010",
+      "budget": 15,
+      "stato": "In attesa"
+    }
+  ]
+}

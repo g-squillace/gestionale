@@ -1,0 +1,72 @@
+---
+import '../styles/global.css'
+import { LayoutDashboard, Tags, Shirt, Award, ShoppingCart, MessageSquare, Settings, Package } from 'lucide-astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | Gestionale Magazzino</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <nav class="bg-slate-800 text-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+          <a href="/" class="font-bold text-xl flex items-center gap-2">
+            <Package class="w-6 h-6" />
+            Gestionale Magazzino
+          </a>
+          <div class="flex space-x-1">
+            <a href="/" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <LayoutDashboard class="w-4 h-4" />
+              Dashboard
+            </a>
+            <a href="/patch" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <Tags class="w-4 h-4" />
+              Patch
+            </a>
+            <a href="/maglie" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <Shirt class="w-4 h-4" />
+              Maglie
+            </a>
+            <a href="/tute" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <Award class="w-4 h-4" />
+              Tute
+            </a>
+            <a href="/vendite" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <ShoppingCart class="w-4 h-4" />
+              Vendite
+            </a>
+            <a href="/richieste" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <MessageSquare class="w-4 h-4" />
+              Richieste
+            </a>
+            <a href="/admin" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium bg-amber-600 flex items-center gap-2">
+              <Settings class="w-4 h-4" />
+              Admin
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      <slot />
+    </main>
+
+    <footer class="bg-slate-800 text-white py-4 mt-8">
+      <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+        Gestionale Magazzino - Collezione Calcio
+      </div>
+    </footer>
+  </body>
+</html>

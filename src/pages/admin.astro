@@ -1,0 +1,767 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Admin">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-800">Pannello Admin</h1>
+    <div class="flex gap-2">
+      <button id="btn-export" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">
+        Esporta JSON
+      </button>
+      <label class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+        Importa JSON
+        <input type="file" id="import-file" accept=".json" class="hidden" />
+      </label>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="flex border-b overflow-x-auto">
+      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="patch" data-active="true">
+        Patch
+      </button>
+      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="maglie">
+        Maglie
+      </button>
+      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="tute">
+        Tute
+      </button>
+      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="vendite">
+        Vendite
+      </button>
+      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="richieste">
+        Richieste
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="section-title" class="text-xl font-semibold text-slate-700">Patch</h2>
+        <button id="btn-add" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Aggiungi
+        </button>
+      </div>
+
+      <!-- Table container -->
+      <div id="table-container" class="overflow-x-auto">
+        <p class="text-gray-500">Caricamento...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h3 id="modal-title" class="text-xl font-semibold text-slate-800">Modifica</h3>
+        <button id="btn-close-modal" class="text-gray-500 hover:text-gray-700">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="edit-form" class="p-6 space-y-4">
+        <!-- Form fields populated by JS -->
+      </form>
+      <div class="flex justify-end gap-3 p-6 border-t">
+        <button type="button" id="btn-cancel" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Annulla
+        </button>
+        <button type="submit" form="edit-form" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          Salva
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
+    <span id="toast-message"></span>
+  </div>
+</Layout>
+
+<script>
+  // Definizione campi per ogni collezione
+  const fields: Record<string, Array<{key: string, label: string, type: string, options?: string[]}>> = {
+    patch: [
+      { key: 'immagine', label: 'Immagine', type: 'image' },
+      { key: 'prodotto', label: 'Prodotto', type: 'text' },
+      { key: 'inMagazzino', label: 'In Magazzino', type: 'number' },
+      { key: 'venduti', label: 'Venduti', type: 'number' },
+      { key: 'quantitaIniziale', label: 'Quantita Iniziale', type: 'number' },
+      { key: 'costoTotale', label: 'Costo Totale', type: 'number' },
+      { key: 'costoUnitario', label: 'Costo Unitario', type: 'number' },
+      { key: 'ricavoVendite', label: 'Ricavo Vendite', type: 'number' },
+      { key: 'profitto', label: 'Profitto', type: 'number' },
+    ],
+    maglie: [
+      { key: 'immagine', label: 'Immagine', type: 'image' },
+      { key: 'maglia', label: 'Squadra', type: 'text' },
+      { key: 'stagione', label: 'Stagione', type: 'text' },
+      { key: 'patches', label: 'Patches', type: 'patches' },
+      { key: 'stato', label: 'Stato', type: 'select', options: ['Da preparare', 'Da arrivare', 'In magazzino', 'Venduta'] },
+      { key: 'costoTotale', label: 'Costo Totale', type: 'number' },
+      { key: 'costoMaglia', label: 'Costo Maglia', type: 'number' },
+      { key: 'costoPatch', label: 'Costo Patch', type: 'number' },
+      { key: 'prezzoVendita', label: 'Prezzo Vendita', type: 'number' },
+      { key: 'profitto', label: 'Profitto', type: 'number' },
+    ],
+    tute: [
+      { key: 'immagine', label: 'Immagine', type: 'image' },
+      { key: 'tipo', label: 'Tipo', type: 'text' },
+      { key: 'squadra', label: 'Squadra', type: 'text' },
+      { key: 'categoria', label: 'Categoria', type: 'text' },
+      { key: 'stagione', label: 'Stagione', type: 'text' },
+      { key: 'descrizione', label: 'Descrizione', type: 'text' },
+      { key: 'costo', label: 'Costo', type: 'number' },
+      { key: 'prezzoVendita', label: 'Prezzo Vendita', type: 'number' },
+      { key: 'stato', label: 'Stato', type: 'select', options: ['In magazzino', 'Venduto'] },
+      { key: 'profitto', label: 'Profitto', type: 'number' },
+    ],
+    vendite: [
+      { key: 'data', label: 'Data', type: 'date' },
+      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Tuta', 'Maglia'] },
+      { key: 'prodotto', label: 'Prodotto', type: 'text' },
+      { key: 'quantita', label: 'Quantita', type: 'number' },
+      { key: 'totale', label: 'Totale', type: 'number' },
+      { key: 'piattaforma', label: 'Piattaforma', type: 'select', options: ['Vinted', 'Ebay', 'Altro'] },
+      { key: 'cliente', label: 'Cliente', type: 'text' },
+    ],
+    richieste: [
+      { key: 'dataRichiesta', label: 'Data Richiesta', type: 'date' },
+      { key: 'url', label: 'URL', type: 'text' },
+      { key: 'cliente', label: 'Cliente', type: 'text' },
+      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Tuta', 'Maglia'] },
+      { key: 'descrizione', label: 'Descrizione', type: 'text' },
+      { key: 'budget', label: 'Budget', type: 'number' },
+      { key: 'stato', label: 'Stato', type: 'select', options: ['In attesa', 'Completata', 'Annullata'] },
+    ],
+  };
+
+  let uploadedImagePath = '';
+
+  let data: any = {};
+  let currentTab = 'patch';
+  let editingIndex = -1;
+  let sortField = 'data';
+  let sortDirection: 'asc' | 'desc' = 'desc';
+
+  // Colori per categoria (come nella dashboard)
+  const categoryColors: Record<string, { bg: string, text: string, dot: string }> = {
+    'Patch': { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
+    'Maglia': { bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-500' },
+    'Tuta': { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
+  };
+
+  // Colori per stato maglie/tute
+  const statusColors: Record<string, { bg: string, text: string }> = {
+    'Da preparare': { bg: 'bg-orange-100', text: 'text-orange-800' },
+    'Da arrivare': { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+    'In magazzino': { bg: 'bg-blue-100', text: 'text-blue-800' },
+    'Venduta': { bg: 'bg-green-100', text: 'text-green-800' },
+    'Venduto': { bg: 'bg-green-100', text: 'text-green-800' },
+    'Da fare': { bg: 'bg-orange-100', text: 'text-orange-800' },
+  };
+
+  // Elementi DOM
+  const tableContainer = document.getElementById('table-container')!;
+  const sectionTitle = document.getElementById('section-title')!;
+  const modal = document.getElementById('modal')!;
+  const modalTitle = document.getElementById('modal-title')!;
+  const editForm = document.getElementById('edit-form')!;
+  const toast = document.getElementById('toast')!;
+  const toastMessage = document.getElementById('toast-message')!;
+
+  // Carica dati
+  async function loadData() {
+    const res = await fetch('/api/data');
+    data = await res.json();
+    renderTable();
+  }
+
+  // Mostra toast
+  function showToast(message: string, type: 'success' | 'error' = 'success') {
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+      type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+    }`;
+    toastMessage.textContent = message;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 3000);
+  }
+
+  // Funzione per trovare l'immagine del prodotto venduto
+  function getImmagineVendita(categoria: string, prodotto: string): string | null {
+    if (categoria === 'Patch') {
+      const item = data.patch?.find((p: any) => p.prodotto === prodotto);
+      return item?.immagine || null;
+    } else if (categoria === 'Maglia') {
+      const item = data.maglie?.find((m: any) => `${m.maglia} ${m.stagione}` === prodotto || m.maglia === prodotto);
+      return item?.immagine || null;
+    } else if (categoria === 'Tuta') {
+      const item = data.tute?.find((t: any) => `${t.tipo} ${t.squadra} ${t.stagione}` === prodotto || t.squadra === prodotto || prodotto.includes(t.squadra));
+      return item?.immagine || null;
+    }
+    return null;
+  }
+
+  // Render tabella
+  function renderTable() {
+    let items = [...(data[currentTab] || [])];
+    const cols = fields[currentTab];
+
+    if (items.length === 0) {
+      tableContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nessun elemento trovato</p>';
+      return;
+    }
+
+    // Ordinamento per la tab vendite
+    if (currentTab === 'vendite') {
+      items.sort((a: any, b: any) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        if (sortField === 'data') {
+          valA = new Date(valA).getTime();
+          valB = new Date(valB).getTime();
+        } else {
+          valA = String(valA).toLowerCase();
+          valB = String(valB).toLowerCase();
+        }
+
+        if (sortDirection === 'asc') {
+          return valA > valB ? 1 : -1;
+        } else {
+          return valA < valB ? 1 : -1;
+        }
+      });
+    }
+
+    // Mappa gli indici originali per edit/delete
+    const originalIndices = items.map((item: any) => data[currentTab].indexOf(item));
+
+    const displayCols = cols.slice(0, 5); // Mostra prime 5 colonne
+
+    // Per la tab vendite, aggiungi colonna immagine all'inizio
+    const showVenditeImage = currentTab === 'vendite';
+
+    // Header con controlli di ordinamento per vendite
+    const getSortIcon = (field: string) => {
+      if (sortField !== field) return '<svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>';
+      if (sortDirection === 'asc') return '<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>';
+      return '<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>';
+    };
+
+    const sortableFields = ['data', 'categoria', 'prodotto'];
+
+    let html = `
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-gray-500">
+            ${showVenditeImage ? '<th class="pb-3 pr-4">Foto</th>' : ''}
+            ${displayCols.map(col => {
+              if (showVenditeImage && sortableFields.includes(col.key)) {
+                return `<th class="pb-3 pr-4">
+                  <button class="sort-btn flex items-center gap-1 hover:text-blue-600 transition-colors" data-field="${col.key}">
+                    ${col.label}
+                    ${getSortIcon(col.key)}
+                  </button>
+                </th>`;
+              }
+              return `<th class="pb-3 pr-4">${col.label}</th>`;
+            }).join('')}
+            <th class="pb-3 text-right">Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    items.forEach((item: any, i: number) => {
+      const originalIndex = originalIndices[i];
+      html += `<tr class="border-b last:border-0 hover:bg-gray-50">`;
+
+      // Per vendite, mostra la miniatura del prodotto
+      if (showVenditeImage) {
+        const immagine = getImmagineVendita(item.categoria, item.prodotto);
+        if (immagine) {
+          html += `<td class="py-3 pr-4"><img src="${immagine}" alt="Img" class="w-12 h-12 object-cover rounded-lg" /></td>`;
+        } else {
+          html += `<td class="py-3 pr-4"><div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></td>`;
+        }
+      }
+
+      displayCols.forEach(col => {
+        let value = item[col.key];
+        if (col.type === 'image') {
+          // Mostra thumbnail immagine
+          if (value) {
+            html += `<td class="py-3 pr-4"><img src="${value}" alt="Img" class="w-12 h-12 object-cover rounded-lg" /></td>`;
+          } else {
+            html += `<td class="py-3 pr-4"><div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></td>`;
+          }
+          return;
+        }
+        // Mostra categoria con pallino colorato
+        if (col.key === 'categoria' && categoryColors[value]) {
+          const colors = categoryColors[value];
+          html += `<td class="py-3 pr-4">
+            <span class="inline-flex items-center gap-2 px-2 py-1 rounded ${colors.bg} ${colors.text} text-xs font-medium">
+              <span class="w-2 h-2 rounded-full ${colors.dot}"></span>
+              ${value}
+            </span>
+          </td>`;
+          return;
+        }
+        // Mostra stato con badge colorato
+        if (col.key === 'stato' && statusColors[value]) {
+          const colors = statusColors[value];
+          html += `<td class="py-3 pr-4">
+            <span class="px-3 py-1 rounded-full ${colors.bg} ${colors.text} text-xs font-medium">
+              ${value}
+            </span>
+          </td>`;
+          return;
+        }
+        // Mostra patches come tag
+        if (col.type === 'patches') {
+          const patches = Array.isArray(value) ? value : [];
+          if (patches.length > 0) {
+            html += `<td class="py-3 pr-4">
+              <div class="flex flex-wrap gap-1 max-w-[200px]">
+                ${patches.map((p: string) => `
+                  <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-200">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    ${p}
+                  </span>
+                `).join('')}
+              </div>
+            </td>`;
+          } else {
+            html += `<td class="py-3 pr-4"><span class="text-gray-400 text-xs">Nessuna patch</span></td>`;
+          }
+          return;
+        }
+        if (Array.isArray(value)) value = value.join(', ');
+        if (value === null || value === undefined) value = '-';
+        if (typeof value === 'number') value = col.key.includes('costo') || col.key.includes('prezzo') || col.key.includes('profitto') || col.key.includes('totale') || col.key.includes('ricavo') || col.key.includes('budget')
+          ? value.toFixed(2) + ' EUR'
+          : value;
+        html += `<td class="py-3 pr-4">${value}</td>`;
+      });
+      html += `
+        <td class="py-3 text-right">
+          <button class="btn-edit p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" data-index="${originalIndex}" title="Modifica">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button class="btn-delete p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" data-index="${originalIndex}" title="Elimina">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    tableContainer.innerHTML = html;
+
+    // Event listeners per edit/delete
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => openModal(parseInt(btn.getAttribute('data-index')!)));
+    });
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteItem(parseInt(btn.getAttribute('data-index')!)));
+    });
+
+    // Event listeners per ordinamento
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.getAttribute('data-field')!;
+        if (sortField === field) {
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortField = field;
+          sortDirection = field === 'data' ? 'desc' : 'asc';
+        }
+        renderTable();
+      });
+    });
+  }
+
+  // Calcola costo patch per maglie
+  function calcolaCostiMaglia() {
+    if (currentTab !== 'maglie') return;
+
+    const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="patch_select"]:checked');
+    const selectedPatches: string[] = [];
+    let costoPatch = 0;
+
+    checkboxes.forEach(cb => {
+      selectedPatches.push(cb.value);
+      const patch = data.patch.find((p: any) => p.prodotto === cb.value);
+      if (patch) {
+        costoPatch += patch.costoUnitario;
+      }
+    });
+
+    const costoMagliaInput = document.querySelector<HTMLInputElement>('input[name="costoMaglia"]');
+    const costoPatchInput = document.querySelector<HTMLInputElement>('input[name="costoPatch"]');
+    const costoTotaleInput = document.querySelector<HTMLInputElement>('input[name="costoTotale"]');
+
+    if (costoPatchInput) costoPatchInput.value = costoPatch.toFixed(2);
+    if (costoTotaleInput && costoMagliaInput) {
+      const costoMaglia = parseFloat(costoMagliaInput.value) || 0;
+      costoTotaleInput.value = (costoMaglia + costoPatch).toFixed(2);
+    }
+  }
+
+  // Apri modal
+  function openModal(index = -1) {
+    editingIndex = index;
+    const cols = fields[currentTab];
+    const item = index >= 0 ? data[currentTab][index] : {};
+
+    modalTitle.textContent = index >= 0 ? 'Modifica elemento' : 'Aggiungi elemento';
+
+    let formHtml = '';
+    cols.forEach(col => {
+      let value = item[col.key];
+      if (Array.isArray(value)) value = value.join(', ');
+      value = value ?? '';
+
+      // Gestione speciale per patches nelle maglie
+      if (col.type === 'patches') {
+        const selectedPatches = item.patches || [];
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${col.label}</label>
+            <div class="space-y-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+              ${data.patch.map((p: any) => `
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="patch_select"
+                    value="${p.prodotto}"
+                    ${selectedPatches.includes(p.prodotto) ? 'checked' : ''}
+                    class="patch-checkbox w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span class="text-sm">${p.prodotto}</span>
+                  <span class="text-xs text-gray-500">(${p.costoUnitario.toFixed(2)} EUR)</span>
+                </label>
+              `).join('')}
+            </div>
+            <input type="hidden" name="patches" />
+          </div>
+        `;
+      } else if (currentTab === 'maglie' && (col.key === 'costoPatch' || col.key === 'costoTotale')) {
+        // Campi di sola lettura calcolati automaticamente
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${col.label} <span class="text-xs text-blue-600">(calcolato automaticamente)</span></label>
+            <input
+              type="number"
+              name="${col.key}"
+              value="${value}"
+              step="0.01"
+              readonly
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600"
+            />
+          </div>
+        `;
+      } else if (col.type === 'image') {
+        // Campo immagine con preview
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${col.label}</label>
+            <div id="image-preview" class="mb-3 ${value ? '' : 'hidden'}">
+              <img src="${value || ''}" alt="Preview" class="max-h-40 mx-auto rounded-lg shadow border" />
+            </div>
+            <label class="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
+              <div id="upload-placeholder" class="${value ? 'hidden' : ''}">
+                <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p class="text-sm text-gray-500">Clicca per selezionare un'immagine</p>
+              </div>
+              <p id="upload-placeholder-change" class="${value ? '' : 'hidden'} text-sm text-blue-600">Clicca per cambiare immagine</p>
+              <input
+                type="file"
+                id="image-input"
+                accept="image/*"
+                class="hidden"
+              />
+            </label>
+            <input type="hidden" name="immagine" value="${value || ''}" id="image-path" />
+            <p id="upload-status" class="text-xs text-gray-500 mt-2"></p>
+          </div>
+        `;
+      } else if (col.type === 'select') {
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${col.label}</label>
+            <select name="${col.key}" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              ${col.options!.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+            </select>
+          </div>
+        `;
+      } else {
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${col.label}</label>
+            <input
+              type="${col.type}"
+              name="${col.key}"
+              value="${value}"
+              ${col.type === 'number' ? 'step="0.01"' : ''}
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        `;
+      }
+    });
+
+    // Reset uploaded image path
+    uploadedImagePath = item.immagine || '';
+
+    editForm.innerHTML = formHtml;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Aggiungi event listeners per calcolo automatico nelle maglie
+    if (currentTab === 'maglie') {
+      document.querySelectorAll('.patch-checkbox').forEach(cb => {
+        cb.addEventListener('change', calcolaCostiMaglia);
+      });
+      const costoMagliaInput = document.querySelector<HTMLInputElement>('input[name="costoMaglia"]');
+      if (costoMagliaInput) {
+        costoMagliaInput.addEventListener('input', calcolaCostiMaglia);
+      }
+      // Calcola iniziale
+      calcolaCostiMaglia();
+    }
+
+    // Aggiungi event listener per upload immagine
+    const imageInput = document.getElementById('image-input') as HTMLInputElement;
+    if (imageInput) {
+      imageInput.addEventListener('change', handleImageUpload);
+    }
+  }
+
+  // Gestione upload immagine
+  async function handleImageUpload(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById('upload-status');
+    const previewEl = document.getElementById('image-preview');
+    const placeholderEl = document.getElementById('upload-placeholder');
+    const placeholderChangeEl = document.getElementById('upload-placeholder-change');
+    const pathInput = document.getElementById('image-path') as HTMLInputElement;
+
+    if (statusEl) {
+      statusEl.textContent = 'Caricamento in corso...';
+      statusEl.className = 'text-xs text-blue-600 mt-2 animate-pulse';
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        uploadedImagePath = result.path;
+        if (pathInput) pathInput.value = result.path;
+        if (previewEl) {
+          previewEl.innerHTML = `<img src="${result.path}" alt="Preview" class="max-h-40 mx-auto rounded-lg shadow border" />`;
+          previewEl.classList.remove('hidden');
+        }
+        if (placeholderEl) placeholderEl.classList.add('hidden');
+        if (placeholderChangeEl) placeholderChangeEl.classList.remove('hidden');
+        if (statusEl) {
+          statusEl.textContent = 'Immagine caricata con successo!';
+          statusEl.className = 'text-xs text-green-600 mt-2';
+        }
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      if (statusEl) {
+        statusEl.textContent = 'Errore durante il caricamento';
+        statusEl.className = 'text-xs text-red-600 mt-2';
+      }
+    }
+  }
+
+  // Chiudi modal
+  function closeModal() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    editingIndex = -1;
+  }
+
+  // Salva elemento
+  async function saveItem(e: Event) {
+    e.preventDefault();
+    const formData = new FormData(editForm as HTMLFormElement);
+    const cols = fields[currentTab];
+
+    const item: any = {};
+    cols.forEach(col => {
+      let value: any = formData.get(col.key);
+      if (col.type === 'number') {
+        value = parseFloat(value as string) || 0;
+      }
+      // Gestione speciale per patches nelle maglie (checkbox multiple)
+      if (col.type === 'patches' || (currentTab === 'maglie' && col.key === 'patches')) {
+        const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="patch_select"]:checked');
+        value = Array.from(checkboxes).map(cb => cb.value);
+      } else if (col.key === 'patches' && typeof value === 'string') {
+        value = value.split(',').map(s => s.trim()).filter(s => s);
+      }
+      item[col.key] = value;
+    });
+
+    try {
+      if (editingIndex >= 0) {
+        await fetch('/api/data', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collection: currentTab, index: editingIndex, item })
+        });
+        showToast('Elemento modificato con successo');
+      } else {
+        await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collection: currentTab, item })
+        });
+        showToast('Elemento aggiunto con successo');
+      }
+      await loadData();
+      closeModal();
+    } catch (error) {
+      showToast('Errore durante il salvataggio', 'error');
+    }
+  }
+
+  // Elimina elemento
+  async function deleteItem(index: number) {
+    if (!confirm('Sei sicuro di voler eliminare questo elemento?')) return;
+
+    try {
+      await fetch('/api/data', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection: currentTab, index })
+      });
+      showToast('Elemento eliminato con successo');
+      await loadData();
+    } catch (error) {
+      showToast('Errore durante l\'eliminazione', 'error');
+    }
+  }
+
+  // Esporta JSON
+  function exportData() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'magazzino_backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('JSON esportato con successo');
+  }
+
+  // Importa JSON
+  async function importData(file: File) {
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+
+      // Sovrascrive ogni collezione
+      for (const collection of Object.keys(fields)) {
+        if (importedData[collection]) {
+          data[collection] = importedData[collection];
+        }
+      }
+
+      // Salva sul server
+      for (const collection of Object.keys(fields)) {
+        if (importedData[collection]) {
+          // Elimina tutti e aggiungi nuovi
+          while (data[collection].length > 0) {
+            await fetch('/api/data', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ collection, index: 0 })
+            });
+            data[collection].shift();
+          }
+          for (const item of importedData[collection]) {
+            await fetch('/api/data', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ collection, item })
+            });
+          }
+        }
+      }
+
+      await loadData();
+      showToast('JSON importato con successo');
+    } catch (error) {
+      showToast('Errore durante l\'importazione', 'error');
+    }
+  }
+
+  // Event listeners
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('data-active', 'false'));
+      btn.setAttribute('data-active', 'true');
+      currentTab = btn.getAttribute('data-tab')!;
+      sectionTitle.textContent = btn.textContent!.trim();
+      renderTable();
+    });
+  });
+
+  document.getElementById('btn-add')!.addEventListener('click', () => openModal());
+  document.getElementById('btn-close-modal')!.addEventListener('click', closeModal);
+  document.getElementById('btn-cancel')!.addEventListener('click', closeModal);
+  editForm.addEventListener('submit', saveItem);
+  document.getElementById('btn-export')!.addEventListener('click', exportData);
+  document.getElementById('import-file')!.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) importData(file);
+  });
+
+  // Chiudi modal cliccando fuori
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Inizializza
+  loadData();
+</script>
+</Layout>

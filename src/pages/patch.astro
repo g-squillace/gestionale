@@ -1,0 +1,127 @@
+---
+import Layout from '../layouts/Layout.astro';
+import data from '../data/magazzino.json';
+import { Tags, Package, ShoppingBag, TrendingUp, Euro, Percent, BarChart3 } from 'lucide-astro';
+
+const { patch } = data;
+const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
+
+// Calcola totali
+const totaleInMagazzino = patch.reduce((acc, p) => acc + p.inMagazzino, 0);
+const totaleVenduti = patch.reduce((acc, p) => acc + p.venduti, 0);
+const totaleProfitto = patch.reduce((acc, p) => acc + p.profitto, 0);
+---
+
+<Layout title="Patch">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
+      <div class="p-3 bg-blue-100 rounded-xl">
+        <Tags class="w-8 h-8 text-blue-600" />
+      </div>
+      Inventario Patch
+    </h1>
+    <div class="flex gap-4">
+      <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg flex items-center gap-2">
+        <Package class="w-4 h-4" />
+        <span class="text-sm">In Magazzino:</span>
+        <span class="font-bold">{totaleInMagazzino}</span>
+      </div>
+      <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg flex items-center gap-2">
+        <ShoppingBag class="w-4 h-4" />
+        <span class="text-sm">Venduti:</span>
+        <span class="font-bold">{totaleVenduti}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {patch.map((p) => (
+      <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex items-center gap-4">
+          {p.immagine ? (
+            <img src={p.immagine} alt={p.prodotto} class="w-16 h-16 object-cover rounded-lg border-2 border-white/30" />
+          ) : (
+            <div class="w-16 h-16 bg-blue-400/30 rounded-lg flex items-center justify-center">
+              <Tags class="w-8 h-8 text-white/70" />
+            </div>
+          )}
+          <h2 class="text-xl font-semibold text-white">{p.prodotto}</h2>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-sm text-gray-500">In Magazzino</div>
+              <div class="text-2xl font-bold text-blue-600">{p.inMagazzino}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">Venduti / Usati</div>
+              <div class="text-2xl font-bold text-gray-700">{p.venduti}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">Quantita Iniziale</div>
+              <div class="text-lg font-medium">{p.quantitaIniziale}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-500">Costo Unitario</div>
+              <div class="text-lg font-medium">{formatEuro(p.costoUnitario)}</div>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-sm text-gray-500">Ricavo Vendite</div>
+              <div class="text-lg font-semibold text-green-600">{formatEuro(p.ricavoVendite)}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500">Profitto</div>
+              <div class={`text-xl font-bold ${p.profitto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatEuro(p.profitto)}
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra progresso -->
+          <div class="mt-4">
+            <div class="text-xs text-gray-500 mb-1">Disponibilita</div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                class="bg-blue-500 h-2.5 rounded-full"
+                style={`width: ${Math.round((p.inMagazzino / p.quantitaIniziale) * 100)}%`}
+              ></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1 text-right">
+              {Math.round((p.inMagazzino / p.quantitaIniziale) * 100)}% disponibile
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- Riepilogo -->
+  <div class="mt-8 bg-white rounded-xl shadow-md p-6">
+    <h2 class="text-xl font-semibold text-slate-700 mb-4">Riepilogo Totale</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="text-center p-4 bg-blue-50 rounded-lg">
+        <div class="text-sm text-blue-600">Articoli in Magazzino</div>
+        <div class="text-2xl font-bold text-blue-700">{totaleInMagazzino}</div>
+      </div>
+      <div class="text-center p-4 bg-gray-50 rounded-lg">
+        <div class="text-sm text-gray-600">Articoli Venduti</div>
+        <div class="text-2xl font-bold text-gray-700">{totaleVenduti}</div>
+      </div>
+      <div class="text-center p-4 bg-emerald-50 rounded-lg">
+        <div class="text-sm text-emerald-600">Ricavo Totale</div>
+        <div class="text-2xl font-bold text-emerald-700">{formatEuro(patch.reduce((acc, p) => acc + p.ricavoVendite, 0))}</div>
+      </div>
+      <div class="text-center p-4 bg-green-50 rounded-lg">
+        <div class="text-sm text-green-600">Profitto Totale</div>
+        <div class={`text-2xl font-bold ${totaleProfitto >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          {formatEuro(totaleProfitto)}
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
