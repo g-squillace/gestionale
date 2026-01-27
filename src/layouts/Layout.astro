@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css'
-import { LayoutDashboard, Tags, Shirt, Award, ShoppingCart, MessageSquare, Settings, Package } from 'lucide-astro';
+import { LayoutDashboard, Tags, Shirt, Award, ShoppingCart, MessageSquare, Settings, Package, LogOut } from 'lucide-astro';
 
 interface Props {
   title: string;
@@ -54,6 +54,10 @@ const { title } = Astro.props;
               <Settings class="w-4 h-4" />
               Admin
             </a>
+            <button id="btn-logout" class="hover:bg-red-600 bg-red-500 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ml-2">
+              <LogOut class="w-4 h-4" />
+              Esci
+            </button>
           </div>
         </div>
       </div>
@@ -68,5 +72,12 @@ const { title } = Astro.props;
         Gestionale Magazzino - Collezione Calcio
       </div>
     </footer>
+
+    <script>
+      document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        await fetch('/api/auth', { method: 'DELETE' });
+        window.location.href = '/login';
+      });
+    </script>
   </body>
 </html>
