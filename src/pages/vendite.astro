@@ -1,41 +1,37 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import data from '../data/magazzino.json';
-import { ShoppingCart, Euro, Package, Trophy, Medal, Award, Calendar, User, ExternalLink, ImageIcon, Tags, Shirt } from 'lucide-astro';
+import { supabase } from '../lib/supabase';
+import { ShoppingCart, Euro, Package, Trophy, Medal, Award, Tags, Shirt } from 'lucide-astro';
 
-const { vendite, patch, maglie, tute } = data;
+const { data: vendite } = await supabase.from('vendite').select('*').order('data', { ascending: false });
+const { data: patch } = await supabase.from('patch').select('*');
+
+const venditeData = vendite || [];
+const patchData = patch || [];
+
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
 
 // Funzione per trovare l'immagine del prodotto
 function getImmagine(categoria: string, prodotto: string): string | null {
   if (categoria === 'Patch') {
-    const item = patch.find(p => p.prodotto === prodotto);
-    return item?.immagine || null;
-  } else if (categoria === 'Maglia') {
-    const item = maglie.find(m => `${m.maglia} ${m.stagione}` === prodotto || m.maglia === prodotto);
-    return item?.immagine || null;
-  } else if (categoria === 'Tuta') {
-    const item = tute.find(t => `${t.tipo} ${t.squadra} ${t.stagione}` === prodotto || t.squadra === prodotto || prodotto.includes(t.squadra));
+    const item = patchData.find(p => p.prodotto === prodotto);
     return item?.immagine || null;
   }
   return null;
 }
 
-// Ordina per data (piu recente prima)
-const venditeOrdinate = [...vendite].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-
 // Statistiche
-const totaleRicavi = vendite.reduce((acc, v) => acc + v.totale, 0);
-const totaleArticoli = vendite.reduce((acc, v) => acc + v.quantita, 0);
+const totaleRicavi = venditeData.reduce((acc, v) => acc + v.totale, 0);
+const totaleArticoli = venditeData.reduce((acc, v) => acc + v.quantita, 0);
 
 // Per piattaforma
-const perPiattaforma = vendite.reduce((acc, v) => {
+const perPiattaforma = venditeData.reduce((acc, v) => {
   acc[v.piattaforma] = (acc[v.piattaforma] || 0) + v.totale;
   return acc;
 }, {} as Record<string, number>);
 
 // Per prodotto
-const perProdotto = vendite.reduce((acc, v) => {
+const perProdotto = venditeData.reduce((acc, v) => {
   acc[v.prodotto] = (acc[v.prodotto] || 0) + v.totale;
   return acc;
 }, {} as Record<string, number>);
@@ -132,7 +128,7 @@ const topProdotti = Object.entries(perProdotto)
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-200">
-        {venditeOrdinate.map((v) => {
+        {venditeData.map((v) => {
           const immagine = getImmagine(v.categoria, v.prodotto);
           return (
             <tr class="hover:bg-gray-50">
@@ -190,53 +186,5 @@ const topProdotti = Object.entries(perProdotto)
         </tr>
       </tfoot>
     </table>
-  </div>
-
-  <!-- Cards per mobile -->
-  <div class="md:hidden space-y-4 mt-6">
-    {venditeOrdinate.map((v) => {
-      const immagine = getImmagine(v.categoria, v.prodotto);
-      return (
-        <div class="bg-white rounded-xl shadow-md p-4">
-          <div class="flex gap-3">
-            {immagine ? (
-              <img src={immagine} alt={v.prodotto} class="w-16 h-16 object-cover rounded-lg shadow flex-shrink-0" />
-            ) : (
-              <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                {v.categoria === 'Patch' ? (
-                  <Tags class="w-8 h-8 text-gray-400" />
-                ) : v.categoria === 'Maglia' ? (
-                  <Shirt class="w-8 h-8 text-gray-400" />
-                ) : (
-                  <Award class="w-8 h-8 text-gray-400" />
-                )}
-              </div>
-            )}
-            <div class="flex-1">
-              <div class="flex justify-between items-start mb-1">
-                <div>
-                  <span class="text-xs text-gray-500">{v.data}</span>
-                  <h3 class="font-semibold text-slate-800 text-sm">{v.prodotto}</h3>
-                </div>
-                <span class="font-bold text-green-600">{formatEuro(v.totale)}</span>
-              </div>
-              <div class="flex gap-2 items-center text-sm flex-wrap">
-                <span class={`px-2 py-0.5 rounded text-xs font-medium ${
-                  v.categoria === 'Patch' ? 'bg-blue-100 text-blue-800' : v.categoria === 'Maglia' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
-                }`}>
-                  {v.categoria}
-                </span>
-                <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  v.piattaforma === 'Vinted' ? 'bg-teal-100 text-teal-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {v.piattaforma}
-                </span>
-                <span class="text-gray-500 text-xs">Qta: {v.quantita}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    })}
   </div>
 </Layout>

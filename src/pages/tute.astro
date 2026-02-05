@@ -1,9 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import data from '../data/magazzino.json';
-import { Award, Package, ShoppingBag, Euro, TrendingUp, Calendar, MapPin } from 'lucide-astro';
+import { supabase } from '../lib/supabase';
+import { Award, Package, ShoppingBag } from 'lucide-astro';
 
-const { tute } = data;
+const { data: tute } = await supabase.from('tute').select('*');
+const tuteData = tute || [];
+
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
 
 const getStatoBadge = (stato: string) => {
@@ -18,8 +20,8 @@ const getStatoBadge = (stato: string) => {
 };
 
 // Calcola totali
-const inMagazzino = tute.filter(t => t.stato === 'In magazzino');
-const vendute = tute.filter(t => t.stato === 'Venduto');
+const inMagazzino = tuteData.filter(t => t.stato === 'In magazzino');
+const vendute = tuteData.filter(t => t.stato === 'Venduto');
 ---
 
 <Layout title="Tute">
@@ -45,17 +47,13 @@ const vendute = tute.filter(t => t.stato === 'Venduto');
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {tute.map((t) => (
+    {tuteData.map((t) => (
       <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <div class={`px-6 py-4 ${t.stato === 'Venduto' ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}>
           <div class="flex items-center gap-4">
-            {t.immagine ? (
-              <img src={t.immagine} alt={t.squadra} class="w-16 h-16 object-cover rounded-lg border-2 border-white/30" />
-            ) : (
-              <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
-                <Award class="w-8 h-8 text-white/70" />
-              </div>
-            )}
+            <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
+              <Award class="w-8 h-8 text-white/70" />
+            </div>
             <div class="flex-1">
               <div class="flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-white">{t.squadra}</h2>
@@ -92,8 +90,8 @@ const vendute = tute.filter(t => t.stato === 'Venduto');
             <div>
               <div class="text-sm text-gray-500">Prezzo Vendita</div>
               <div class="text-lg font-semibold">
-                {t.prezzoVendita > 0 ? (
-                  <span class="text-green-600">{formatEuro(t.prezzoVendita)}</span>
+                {t.prezzo_vendita > 0 ? (
+                  <span class="text-green-600">{formatEuro(t.prezzo_vendita)}</span>
                 ) : (
                   <span class="text-gray-400">Da definire</span>
                 )}
@@ -119,7 +117,7 @@ const vendute = tute.filter(t => t.stato === 'Venduto');
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="text-center p-4 bg-purple-50 rounded-lg">
         <div class="text-sm text-purple-600">Totale Articoli</div>
-        <div class="text-2xl font-bold text-purple-700">{tute.length}</div>
+        <div class="text-2xl font-bold text-purple-700">{tuteData.length}</div>
       </div>
       <div class="text-center p-4 bg-blue-50 rounded-lg">
         <div class="text-sm text-blue-600">Valore In Magazzino</div>
@@ -130,7 +128,7 @@ const vendute = tute.filter(t => t.stato === 'Venduto');
       <div class="text-center p-4 bg-green-50 rounded-lg">
         <div class="text-sm text-green-600">Ricavo Vendite</div>
         <div class="text-2xl font-bold text-green-700">
-          {formatEuro(vendute.reduce((acc, t) => acc + t.prezzoVendita, 0))}
+          {formatEuro(vendute.reduce((acc, t) => acc + t.prezzo_vendita, 0))}
         </div>
       </div>
       <div class="text-center p-4 bg-emerald-50 rounded-lg">

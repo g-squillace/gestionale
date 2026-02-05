@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 
 // Credenziali (semplici, come richiesto)
-const VALID_USERNAME = 'king';
-const VALID_PASSWORD = 'patch';
+const VALID_USERNAME = 'susta';
+const VALID_PASSWORD = 'waquilone';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {

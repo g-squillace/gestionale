@@ -1,17 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import data from '../data/magazzino.json';
+import { supabase } from '../lib/supabase';
 import { MessageSquare, Clock, Euro, User, ExternalLink, AlertCircle, Users } from 'lucide-astro';
 
-const { richieste } = data;
+const { data: richieste } = await supabase.from('richieste').select('*').order('data_richiesta', { ascending: false });
+const richiesteData = richieste || [];
+
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
 
-// Ordina per data (piu recente prima)
-const richiesteOrdinate = [...richieste].sort((a, b) => new Date(b.dataRichiesta).getTime() - new Date(a.dataRichiesta).getTime());
-
 // Statistiche
-const totaleBudget = richieste.reduce((acc, r) => acc + r.budget, 0);
-const perCliente = richieste.reduce((acc, r) => {
+const totaleBudget = richiesteData.reduce((acc, r) => acc + r.budget, 0);
+const perCliente = richiesteData.reduce((acc, r) => {
   if (r.cliente) {
     acc[r.cliente] = (acc[r.cliente] || 0) + 1;
   }
@@ -36,7 +35,7 @@ const perCliente = richieste.reduce((acc, r) => {
           <MessageSquare class="w-5 h-5 text-orange-600" />
         </div>
       </div>
-      <div class="text-3xl font-bold text-orange-600">{richieste.length}</div>
+      <div class="text-3xl font-bold text-orange-600">{richiesteData.length}</div>
     </div>
     <div class="bg-white rounded-xl shadow-md p-6">
       <div class="flex items-center justify-between mb-2">
@@ -46,7 +45,7 @@ const perCliente = richieste.reduce((acc, r) => {
         </div>
       </div>
       <div class="text-3xl font-bold text-amber-600">
-        {richieste.filter(r => r.stato === 'In attesa').length}
+        {richiesteData.filter(r => r.stato === 'In attesa').length}
       </div>
     </div>
     <div class="bg-white rounded-xl shadow-md p-6">
@@ -62,7 +61,7 @@ const perCliente = richieste.reduce((acc, r) => {
 
   <!-- Lista richieste -->
   <div class="space-y-4">
-    {richiesteOrdinate.map((r) => (
+    {richiesteData.map((r) => (
       <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <div class="flex flex-col md:flex-row">
           <div class="flex-1 p-6">
@@ -73,7 +72,7 @@ const perCliente = richieste.reduce((acc, r) => {
               <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                 {r.categoria}
               </span>
-              <span class="text-sm text-gray-500">{r.dataRichiesta}</span>
+              <span class="text-sm text-gray-500">{r.data_richiesta}</span>
             </div>
 
             <h3 class="text-lg font-semibold text-slate-800 mb-2">{r.descrizione}</h3>
