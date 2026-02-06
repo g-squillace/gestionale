@@ -1,188 +1,98 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
-import { ShoppingCart, Euro, Package, Trophy, Medal, Award, Tags, Shirt } from 'lucide-astro';
+import { ShoppingCart, Euro, Package } from 'lucide-astro';
 
 const { data: vendite } = await supabase.from('vendite').select('*').order('data', { ascending: false });
-const { data: patch } = await supabase.from('patch').select('*');
-
 const venditeData = vendite || [];
-const patchData = patch || [];
 
-const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
+const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + '€';
 
-// Funzione per trovare l'immagine del prodotto
-function getImmagine(categoria: string, prodotto: string): string | null {
-  if (categoria === 'Patch') {
-    const item = patchData.find(p => p.prodotto === prodotto);
-    return item?.immagine || null;
-  }
-  return null;
-}
-
-// Statistiche
 const totaleRicavi = venditeData.reduce((acc, v) => acc + v.totale, 0);
 const totaleArticoli = venditeData.reduce((acc, v) => acc + v.quantita, 0);
 
-// Per piattaforma
-const perPiattaforma = venditeData.reduce((acc, v) => {
-  acc[v.piattaforma] = (acc[v.piattaforma] || 0) + v.totale;
-  return acc;
-}, {} as Record<string, number>);
+const getCategoriaColor = (cat: string) => {
+  switch (cat) {
+    case 'Patch': return 'bg-blue-100 text-blue-700';
+    case 'Maglia': return 'bg-amber-100 text-amber-700';
+    case 'Tuta': return 'bg-purple-100 text-purple-700';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+};
 
-// Per prodotto
-const perProdotto = venditeData.reduce((acc, v) => {
-  acc[v.prodotto] = (acc[v.prodotto] || 0) + v.totale;
-  return acc;
-}, {} as Record<string, number>);
-
-const topProdotti = Object.entries(perProdotto)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 3);
+const getPiattaformaColor = (p: string) => {
+  switch (p) {
+    case 'Vinted': return 'bg-teal-100 text-teal-700';
+    case 'Ebay': return 'bg-yellow-100 text-yellow-700';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+};
 ---
 
-<Layout title="Registro Vendite">
-  <h1 class="text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
-    <div class="p-3 bg-green-100 rounded-xl">
-      <ShoppingCart class="w-8 h-8 text-green-600" />
-    </div>
-    Registro Vendite
-  </h1>
-
-  <!-- Stats -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Ricavo Totale</div>
-        <div class="p-2 bg-green-100 rounded-lg">
-          <Euro class="w-5 h-5 text-green-600" />
-        </div>
+<Layout title="Vendite">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+      <ShoppingCart class="w-6 h-6 text-green-600" />
+      Registro Vendite
+    </h1>
+    <div class="flex gap-3 text-sm">
+      <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+        <Package class="w-4 h-4" />
+        <span class="font-semibold">{totaleArticoli}</span>
       </div>
-      <div class="text-3xl font-bold text-green-600">{formatEuro(totaleRicavi)}</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Articoli Venduti</div>
-        <div class="p-2 bg-blue-100 rounded-lg">
-          <Package class="w-5 h-5 text-blue-600" />
-        </div>
+      <div class="bg-green-50 text-green-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+        <Euro class="w-4 h-4" />
+        <span class="font-semibold">{formatEuro(totaleRicavi)}</span>
       </div>
-      <div class="text-3xl font-bold text-blue-600">{totaleArticoli}</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Vendite Vinted</div>
-        <div class="p-2 bg-teal-100 rounded-lg">
-          <ShoppingCart class="w-5 h-5 text-teal-600" />
-        </div>
-      </div>
-      <div class="text-3xl font-bold text-teal-600">{formatEuro(perPiattaforma['Vinted'] || 0)}</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Vendite Ebay</div>
-        <div class="p-2 bg-yellow-100 rounded-lg">
-          <ShoppingCart class="w-5 h-5 text-yellow-600" />
-        </div>
-      </div>
-      <div class="text-3xl font-bold text-yellow-600">{formatEuro(perPiattaforma['Ebay'] || 0)}</div>
     </div>
   </div>
 
-  <!-- Top prodotti -->
-  <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-    <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
-      <Trophy class="w-5 h-5 text-yellow-500" />
-      Prodotti Piu Venduti
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {topProdotti.map(([prodotto, totale], index) => (
-        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-          <div class={`w-10 h-10 rounded-full flex items-center justify-center ${
-            index === 0 ? 'bg-yellow-100' : index === 1 ? 'bg-gray-100' : 'bg-amber-100'
-          }`}>
-            {index === 0 ? <Trophy class="w-5 h-5 text-yellow-600" /> : index === 1 ? <Medal class="w-5 h-5 text-gray-500" /> : <Award class="w-5 h-5 text-amber-600" />}
-          </div>
-          <div class="flex-1">
-            <div class="font-medium text-slate-800">{prodotto}</div>
-            <div class="text-sm text-green-600 font-semibold">{formatEuro(totale)}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-
-  <!-- Tabella vendite -->
-  <div class="bg-white rounded-xl shadow-md overflow-hidden">
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
     <table class="w-full">
-      <thead class="bg-slate-50">
-        <tr>
-          <th class="px-4 py-4 text-left text-sm font-semibold text-slate-600">Foto</th>
-          <th class="px-4 py-4 text-left text-sm font-semibold text-slate-600">Data</th>
-          <th class="px-4 py-4 text-left text-sm font-semibold text-slate-600">Categoria</th>
-          <th class="px-4 py-4 text-left text-sm font-semibold text-slate-600">Prodotto</th>
-          <th class="px-4 py-4 text-center text-sm font-semibold text-slate-600">Qta</th>
-          <th class="px-4 py-4 text-right text-sm font-semibold text-slate-600">Totale</th>
-          <th class="px-4 py-4 text-center text-sm font-semibold text-slate-600">Piattaforma</th>
-          <th class="px-4 py-4 text-left text-sm font-semibold text-slate-600">Cliente</th>
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <th class="px-4 py-3">Data</th>
+          <th class="px-4 py-3">Categoria</th>
+          <th class="px-4 py-3">Prodotto</th>
+          <th class="px-4 py-3 text-center">Qtà</th>
+          <th class="px-4 py-3 text-right">Totale</th>
+          <th class="px-4 py-3 text-center">Piattaforma</th>
+          <th class="px-4 py-3">Cliente</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-200">
-        {venditeData.map((v) => {
-          const immagine = getImmagine(v.categoria, v.prodotto);
-          return (
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3">
-                {immagine ? (
-                  <img src={immagine} alt={v.prodotto} class="w-12 h-12 object-cover rounded-lg shadow" />
-                ) : (
-                  <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    {v.categoria === 'Patch' ? (
-                      <Tags class="w-6 h-6 text-gray-400" />
-                    ) : v.categoria === 'Maglia' ? (
-                      <Shirt class="w-6 h-6 text-gray-400" />
-                    ) : (
-                      <Award class="w-6 h-6 text-gray-400" />
-                    )}
-                  </div>
-                )}
-              </td>
-              <td class="px-4 py-4 text-slate-600">{v.data}</td>
-              <td class="px-4 py-4">
-                <span class={`px-2 py-1 rounded text-xs font-medium ${
-                  v.categoria === 'Patch' ? 'bg-blue-100 text-blue-800' : v.categoria === 'Maglia' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
-                }`}>
-                  {v.categoria}
+      <tbody class="divide-y divide-slate-100">
+        {venditeData.map((v) => (
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 text-slate-600 text-sm">{v.data}</td>
+            <td class="px-4 py-3">
+              <span class={`px-2 py-1 rounded text-xs font-medium ${getCategoriaColor(v.categoria)}`}>
+                {v.categoria}
+              </span>
+            </td>
+            <td class="px-4 py-3 font-medium text-slate-800">{v.prodotto}</td>
+            <td class="px-4 py-3 text-center text-slate-600">{v.quantita}</td>
+            <td class="px-4 py-3 text-right font-semibold text-green-600">{formatEuro(v.totale)}</td>
+            <td class="px-4 py-3 text-center">
+              <span class={`px-2 py-1 rounded-full text-xs font-medium ${getPiattaformaColor(v.piattaforma)}`}>
+                {v.piattaforma}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-slate-600 text-sm">
+              {v.cliente ? (
+                <span class={v.cliente === 'Sospeso' ? 'text-orange-600 font-medium' : ''}>
+                  {v.cliente}
                 </span>
-              </td>
-              <td class="px-4 py-4 font-medium text-slate-800">{v.prodotto}</td>
-              <td class="px-4 py-4 text-center text-slate-600">{v.quantita}</td>
-              <td class="px-4 py-4 text-right font-semibold text-green-600">{formatEuro(v.totale)}</td>
-              <td class="px-4 py-4 text-center">
-                <span class={`px-3 py-1 rounded-full text-xs font-medium ${
-                  v.piattaforma === 'Vinted' ? 'bg-teal-100 text-teal-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {v.piattaforma}
-                </span>
-              </td>
-              <td class="px-4 py-4 text-slate-600">
-                {v.cliente ? (
-                  <span class={v.cliente === 'Sospeso' ? 'text-orange-600 font-medium' : ''}>
-                    {v.cliente}
-                  </span>
-                ) : (
-                  <span class="text-gray-400">-</span>
-                )}
-              </td>
-            </tr>
-          );
-        })}
+              ) : '-'}
+            </td>
+          </tr>
+        ))}
       </tbody>
-      <tfoot class="bg-slate-100">
-        <tr>
-          <td colspan="5" class="px-4 py-4 text-right font-semibold text-slate-700">TOTALE</td>
-          <td class="px-4 py-4 text-right font-bold text-green-700 text-lg">{formatEuro(totaleRicavi)}</td>
-          <td colspan="2"></td>
+      <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+        <tr class="font-semibold text-slate-700">
+          <td class="px-4 py-3" colspan="3">Totale ({venditeData.length} vendite)</td>
+          <td class="px-4 py-3 text-center">{totaleArticoli}</td>
+          <td class="px-4 py-3 text-right text-green-600">{formatEuro(totaleRicavi)}</td>
+          <td class="px-4 py-3" colspan="2"></td>
         </tr>
       </tfoot>
     </table>

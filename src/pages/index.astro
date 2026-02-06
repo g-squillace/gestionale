@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
-import { TrendingUp, Package, Euro, Tags, Shirt, Award } from 'lucide-astro';
+import { TrendingUp, Package, Euro, Tags, Shirt, Award, Wallet, PiggyBank, Receipt } from 'lucide-astro';
 
 // Fetch dati da Supabase
 const { data: patch } = await supabase.from('patch').select('*');
@@ -35,8 +35,24 @@ const maglieDaFare = maglieData.filter(m => m.stato === 'Da fare').length;
 const valoreInventarioMaglie = maglieData.filter(m => m.stato !== 'Venduta').reduce((acc, m) => acc + m.costo_totale, 0);
 
 // Calcola totali vendite
-const totaleRicavi = venditeData.reduce((acc, v) => acc + v.totale, 0);
 const totaleArticoliVenduti = venditeData.reduce((acc, v) => acc + v.quantita, 0);
+
+// Ricavi totali = somma ricavi patch + tute vendute + maglie vendute
+const ricavoMaglieVendute = maglieData.filter(m => m.stato === 'Venduta').reduce((acc, m) => acc + m.prezzo_vendita, 0);
+const totaleRicavi = ricavoTotalePatch + ricavoTotaleTute + ricavoMaglieVendute;
+
+// Spese totali (costi di acquisto)
+const spesePatch = patchData.reduce((acc, p) => acc + (p.costo_totale || 0), 0);
+const speseTute = tuteData.reduce((acc, t) => acc + (t.costo || 0), 0);
+const speseMaglie = maglieData.reduce((acc, m) => acc + (m.costo_totale || 0), 0);
+const totaleSpese = spesePatch + speseTute + speseMaglie;
+
+// Profitto totale
+const profittoMaglie = maglieData.reduce((acc, m) => acc + (m.profitto || 0), 0);
+const totaleProfitto = profittoPatch + profittoTute + profittoMaglie;
+
+// Valore inventario (articoli ancora in magazzino)
+const valoreInventarioTotale = valoreInventarioPatch + valoreInventarioTute + valoreInventarioMaglie;
 
 // Formattazione euro
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
@@ -44,6 +60,38 @@ const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
 
 <Layout title="Dashboard">
   <h1 class="text-3xl font-bold text-slate-800 mb-8">Dashboard Magazzino</h1>
+
+  <!-- Resoconto Finanziario -->
+  <div class="bg-gradient-to-r from-slate-800 to-slate-700 rounded-xl shadow-lg p-6 mb-8 text-white">
+    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <PiggyBank class="w-5 h-5" />
+      Resoconto Finanziario
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div>
+        <div class="text-slate-300 text-sm uppercase tracking-wide mb-1">Spese Totali</div>
+        <div class="text-2xl font-bold text-red-400">{formatEuro(totaleSpese)}</div>
+        <div class="text-xs text-slate-400 mt-1">Investimento complessivo</div>
+      </div>
+      <div>
+        <div class="text-slate-300 text-sm uppercase tracking-wide mb-1">Ricavi Totali</div>
+        <div class="text-2xl font-bold text-green-400">{formatEuro(totaleRicavi)}</div>
+        <div class="text-xs text-slate-400 mt-1">Da vendite effettuate</div>
+      </div>
+      <div>
+        <div class="text-slate-300 text-sm uppercase tracking-wide mb-1">Profitto Netto</div>
+        <div class={`text-2xl font-bold ${totaleProfitto >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {formatEuro(totaleProfitto)}
+        </div>
+        <div class="text-xs text-slate-400 mt-1">Guadagno reale</div>
+      </div>
+      <div>
+        <div class="text-slate-300 text-sm uppercase tracking-wide mb-1">Valore Inventario</div>
+        <div class="text-2xl font-bold text-blue-400">{formatEuro(valoreInventarioTotale)}</div>
+        <div class="text-xs text-slate-400 mt-1">Articoli in magazzino</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Stats generali -->
   <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -58,30 +106,30 @@ const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
     </div>
     <div class="bg-white rounded-xl shadow-md p-6">
       <div class="flex items-center justify-between mb-2">
+        <div class="text-sm text-gray-500 uppercase tracking-wide">Spese Totali</div>
+        <div class="p-2 bg-red-100 rounded-lg">
+          <Receipt class="w-5 h-5 text-red-600" />
+        </div>
+      </div>
+      <div class="text-3xl font-bold text-red-600">{formatEuro(totaleSpese)}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-sm text-gray-500 uppercase tracking-wide">Profitto Netto</div>
+        <div class="p-2 bg-emerald-100 rounded-lg">
+          <TrendingUp class="w-5 h-5 text-emerald-600" />
+        </div>
+      </div>
+      <div class={`text-3xl font-bold ${totaleProfitto >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatEuro(totaleProfitto)}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <div class="flex items-center justify-between mb-2">
         <div class="text-sm text-gray-500 uppercase tracking-wide">Articoli Venduti</div>
         <div class="p-2 bg-blue-100 rounded-lg">
           <Package class="w-5 h-5 text-blue-600" />
         </div>
       </div>
       <div class="text-3xl font-bold text-blue-600">{totaleArticoliVenduti}</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Profitto Patch</div>
-        <div class="p-2 bg-emerald-100 rounded-lg">
-          <TrendingUp class="w-5 h-5 text-emerald-600" />
-        </div>
-      </div>
-      <div class="text-3xl font-bold text-emerald-600">{formatEuro(profittoPatch)}</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-2">
-        <div class="text-sm text-gray-500 uppercase tracking-wide">Profitto Tute</div>
-        <div class="p-2 bg-emerald-100 rounded-lg">
-          <TrendingUp class="w-5 h-5 text-emerald-600" />
-        </div>
-      </div>
-      <div class="text-3xl font-bold text-emerald-600">{formatEuro(profittoTute)}</div>
     </div>
   </div>
 

@@ -1,142 +1,145 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
-import { Award, Package, ShoppingBag } from 'lucide-astro';
+import { Award, Package, ShoppingBag, Search } from 'lucide-astro';
 
 const { data: tute } = await supabase.from('tute').select('*');
 const tuteData = tute || [];
 
-const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
+const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + '€';
 
 const getStatoBadge = (stato: string) => {
   switch (stato) {
-    case 'Venduto':
-      return 'bg-green-100 text-green-800';
-    case 'In magazzino':
-      return 'bg-blue-100 text-blue-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
+    case 'Venduto': return 'bg-green-100 text-green-700';
+    case 'In magazzino': return 'bg-blue-100 text-blue-700';
+    default: return 'bg-gray-100 text-gray-700';
   }
 };
 
-// Calcola totali
-const inMagazzino = tuteData.filter(t => t.stato === 'In magazzino');
-const vendute = tuteData.filter(t => t.stato === 'Venduto');
+// Ordinamento: In magazzino prima, Venduto in fondo
+const sortedData = [...tuteData].sort((a, b) => {
+  if (a.stato === 'Venduto' && b.stato !== 'Venduto') return 1;
+  if (b.stato === 'Venduto' && a.stato !== 'Venduto') return -1;
+  return 0;
+});
+
+const inMagazzino = tuteData.filter(t => t.stato === 'In magazzino').length;
+const vendute = tuteData.filter(t => t.stato === 'Venduto').length;
+const totaleRicavi = tuteData.filter(t => t.stato === 'Venduto').reduce((acc, t) => acc + t.prezzo_vendita, 0);
+const totaleProfitto = tuteData.reduce((acc, t) => acc + t.profitto, 0);
 ---
 
 <Layout title="Tute">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
-      <div class="p-3 bg-purple-100 rounded-xl">
-        <Award class="w-8 h-8 text-purple-600" />
-      </div>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+      <Award class="w-6 h-6 text-purple-600" />
       Inventario Tute
     </h1>
-    <div class="flex gap-4">
-      <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg flex items-center gap-2">
+    <div class="flex gap-3 text-sm">
+      <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
         <Package class="w-4 h-4" />
-        <span class="text-sm">In Magazzino:</span>
-        <span class="font-bold">{inMagazzino.length}</span>
+        <span class="font-semibold">{inMagazzino}</span>
       </div>
-      <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg flex items-center gap-2">
+      <div class="bg-green-50 text-green-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
         <ShoppingBag class="w-4 h-4" />
-        <span class="text-sm">Vendute:</span>
-        <span class="font-bold">{vendute.length}</span>
+        <span class="font-semibold">{vendute}</span>
       </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {tuteData.map((t) => (
-      <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class={`px-6 py-4 ${t.stato === 'Venduto' ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'}`}>
-          <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
-              <Award class="w-8 h-8 text-white/70" />
-            </div>
-            <div class="flex-1">
-              <div class="flex justify-between items-center">
-                <h2 class="text-xl font-semibold text-white">{t.squadra}</h2>
-                <span class={`px-3 py-1 rounded-full text-xs font-medium ${getStatoBadge(t.stato)}`}>
-                  {t.stato}
-                </span>
-              </div>
-              <p class="text-white/80 text-sm mt-1">{t.tipo} - {t.categoria}</p>
-            </div>
-          </div>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <div class="text-sm text-gray-500">Stagione</div>
-              <div class="text-lg font-medium">{t.stagione || 'N/D'}</div>
-            </div>
-            <div>
-              <div class="text-sm text-gray-500">Costo</div>
-              <div class="text-lg font-medium">{formatEuro(t.costo)}</div>
-            </div>
-          </div>
+  <!-- Filtro ricerca -->
+  <div class="mb-4">
+    <div class="relative max-w-md">
+      <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Cerca per nome..."
+        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      />
+    </div>
+  </div>
 
-          {t.descrizione && (
-            <div class="mb-4">
-              <div class="text-sm text-gray-500">Descrizione</div>
-              <p class="text-gray-700">{t.descrizione}</p>
-            </div>
-          )}
-
-          <hr class="my-4" />
-
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-sm text-gray-500">Prezzo Vendita</div>
-              <div class="text-lg font-semibold">
-                {t.prezzo_vendita > 0 ? (
-                  <span class="text-green-600">{formatEuro(t.prezzo_vendita)}</span>
-                ) : (
-                  <span class="text-gray-400">Da definire</span>
-                )}
-              </div>
-            </div>
-            {t.stato === 'Venduto' && (
-              <div class="text-right">
-                <div class="text-sm text-gray-500">Profitto</div>
-                <div class={`text-xl font-bold ${t.profitto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatEuro(t.profitto)}
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <th class="px-4 py-3">Tipo</th>
+          <th class="px-4 py-3">Squadra</th>
+          <th class="px-4 py-3">Categoria</th>
+          <th class="px-4 py-3">Stagione</th>
+          <th class="px-4 py-3 text-right">Costo</th>
+          <th class="px-4 py-3 text-right">Prezzo Vendita</th>
+          <th class="px-4 py-3 text-right">Profitto</th>
+          <th class="px-4 py-3 text-center">Stato</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {sortedData.map((t) => (
+          <tr class="hover:bg-slate-50 transition-colors data-row" data-name={`${t.tipo} ${t.squadra}`.toLowerCase()}>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                  <Award class="w-4 h-4 text-purple-500" />
                 </div>
+                <span class="font-medium text-slate-800">{t.tipo}</span>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-
-  <!-- Riepilogo -->
-  <div class="mt-8 bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-xl font-semibold text-slate-700 mb-4">Riepilogo</h2>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="text-center p-4 bg-purple-50 rounded-lg">
-        <div class="text-sm text-purple-600">Totale Articoli</div>
-        <div class="text-2xl font-bold text-purple-700">{tuteData.length}</div>
-      </div>
-      <div class="text-center p-4 bg-blue-50 rounded-lg">
-        <div class="text-sm text-blue-600">Valore In Magazzino</div>
-        <div class="text-2xl font-bold text-blue-700">
-          {formatEuro(inMagazzino.reduce((acc, t) => acc + t.costo, 0))}
-        </div>
-      </div>
-      <div class="text-center p-4 bg-green-50 rounded-lg">
-        <div class="text-sm text-green-600">Ricavo Vendite</div>
-        <div class="text-2xl font-bold text-green-700">
-          {formatEuro(vendute.reduce((acc, t) => acc + t.prezzo_vendita, 0))}
-        </div>
-      </div>
-      <div class="text-center p-4 bg-emerald-50 rounded-lg">
-        <div class="text-sm text-emerald-600">Profitto Totale</div>
-        <div class="text-2xl font-bold text-emerald-700">
-          {formatEuro(vendute.reduce((acc, t) => acc + t.profitto, 0))}
-        </div>
-      </div>
-    </div>
+            </td>
+            <td class="px-4 py-3 text-slate-700">{t.squadra}</td>
+            <td class="px-4 py-3 text-slate-600 text-sm">{t.categoria || '-'}</td>
+            <td class="px-4 py-3 text-slate-600 text-sm">{t.stagione || '-'}</td>
+            <td class="px-4 py-3 text-right text-slate-600">{formatEuro(t.costo)}</td>
+            <td class="px-4 py-3 text-right">
+              {t.prezzo_vendita > 0 ? (
+                <span class="text-green-600 font-medium">{formatEuro(t.prezzo_vendita)}</span>
+              ) : (
+                <span class="text-gray-400">-</span>
+              )}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span class={`font-semibold ${t.profitto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatEuro(t.profitto)}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class={`px-2 py-1 rounded-full text-xs font-medium ${getStatoBadge(t.stato)}`}>
+                {t.stato}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+        <tr class="font-semibold text-slate-700">
+          <td class="px-4 py-3" colspan="4">Totale ({tuteData.length} articoli)</td>
+          <td class="px-4 py-3 text-right">{formatEuro(tuteData.reduce((acc, t) => acc + t.costo, 0))}</td>
+          <td class="px-4 py-3 text-right text-green-600">{formatEuro(totaleRicavi)}</td>
+          <td class="px-4 py-3 text-right">
+            <span class={totaleProfitto >= 0 ? 'text-green-600' : 'text-red-600'}>
+              {formatEuro(totaleProfitto)}
+            </span>
+          </td>
+          <td class="px-4 py-3"></td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 </Layout>
+
+<script>
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const rows = document.querySelectorAll('.data-row');
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase().trim();
+
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      if (query === '' || name.includes(query)) {
+        (row as HTMLElement).style.display = '';
+      } else {
+        (row as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+</script>

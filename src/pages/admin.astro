@@ -49,6 +49,21 @@ import Layout from '../layouts/Layout.astro';
         </button>
       </div>
 
+      <!-- Filtro ricerca -->
+      <div class="mb-4">
+        <div class="relative max-w-md">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Cerca per nome..."
+            class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+
       <!-- Table container -->
       <div id="table-container" class="overflow-x-auto">
         <p class="text-gray-500">Caricamento...</p>
@@ -91,8 +106,8 @@ import Layout from '../layouts/Layout.astro';
   // Definizione campi per ogni collezione
   const fields: Record<string, Array<{key: string, label: string, type: string, options?: string[]}>> = {
     patch: [
-      { key: 'immagine', label: 'Immagine', type: 'image' },
       { key: 'prodotto', label: 'Prodotto', type: 'text' },
+      { key: 'lotto', label: 'Lotto/Ordine', type: 'text' },
       { key: 'inMagazzino', label: 'In Magazzino', type: 'number' },
       { key: 'venduti', label: 'Venduti', type: 'number' },
       { key: 'quantitaIniziale', label: 'Quantita Iniziale', type: 'number' },
@@ -102,7 +117,6 @@ import Layout from '../layouts/Layout.astro';
       { key: 'profitto', label: 'Profitto', type: 'number' },
     ],
     maglie: [
-      { key: 'immagine', label: 'Immagine', type: 'image' },
       { key: 'maglia', label: 'Squadra', type: 'text' },
       { key: 'stagione', label: 'Stagione', type: 'text' },
       { key: 'patches', label: 'Patches', type: 'patches' },
@@ -114,7 +128,6 @@ import Layout from '../layouts/Layout.astro';
       { key: 'profitto', label: 'Profitto', type: 'number' },
     ],
     tute: [
-      { key: 'immagine', label: 'Immagine', type: 'image' },
       { key: 'tipo', label: 'Tipo', type: 'text' },
       { key: 'squadra', label: 'Squadra', type: 'text' },
       { key: 'categoria', label: 'Categoria', type: 'text' },
@@ -128,11 +141,17 @@ import Layout from '../layouts/Layout.astro';
     vendite: [
       { key: 'data', label: 'Data', type: 'date' },
       { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Tuta', 'Maglia'] },
-      { key: 'prodotto', label: 'Prodotto', type: 'text' },
+      { key: 'prodotto', label: 'Prodotto', type: 'product_select' },
       { key: 'quantita', label: 'Quantita', type: 'number' },
       { key: 'totale', label: 'Totale', type: 'number' },
       { key: 'piattaforma', label: 'Piattaforma', type: 'select', options: ['Vinted', 'Ebay', 'Altro'] },
       { key: 'cliente', label: 'Cliente', type: 'text' },
+    ],
+    vendite_new: [
+      { key: 'data', label: 'Data', type: 'date' },
+      { key: 'piattaforma', label: 'Piattaforma', type: 'select', options: ['Vinted', 'Ebay', 'Altro'] },
+      { key: 'cliente', label: 'Cliente', type: 'text' },
+      { key: 'prodotti', label: 'Prodotti', type: 'multi_products' },
     ],
     richieste: [
       { key: 'dataRichiesta', label: 'Data Richiesta', type: 'date' },
@@ -144,8 +163,6 @@ import Layout from '../layouts/Layout.astro';
       { key: 'stato', label: 'Stato', type: 'select', options: ['In attesa', 'Completata', 'Annullata'] },
     ],
   };
-
-  let uploadedImagePath = '';
 
   let data: any = {};
   let currentTab = 'patch';
@@ -198,21 +215,6 @@ import Layout from '../layouts/Layout.astro';
     }, 3000);
   }
 
-  // Funzione per trovare l'immagine del prodotto venduto
-  function getImmagineVendita(categoria: string, prodotto: string): string | null {
-    if (categoria === 'Patch') {
-      const item = data.patch?.find((p: any) => p.prodotto === prodotto);
-      return item?.immagine || null;
-    } else if (categoria === 'Maglia') {
-      const item = data.maglie?.find((m: any) => `${m.maglia} ${m.stagione}` === prodotto || m.maglia === prodotto);
-      return item?.immagine || null;
-    } else if (categoria === 'Tuta') {
-      const item = data.tute?.find((t: any) => `${t.tipo} ${t.squadra} ${t.stagione}` === prodotto || t.squadra === prodotto || prodotto.includes(t.squadra));
-      return item?.immagine || null;
-    }
-    return null;
-  }
-
   // Render tabella
   function renderTable() {
     let items = [...(data[currentTab] || [])];
@@ -221,6 +223,37 @@ import Layout from '../layouts/Layout.astro';
     if (items.length === 0) {
       tableContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nessun elemento trovato</p>';
       return;
+    }
+
+    // Ordinamento per patch: lotto 2 prima, poi lotto 1, zero stock in fondo
+    if (currentTab === 'patch') {
+      items.sort((a: any, b: any) => {
+        const aStock = (a.quantitaIniziale || 0) - (a.venduti || 0);
+        const bStock = (b.quantitaIniziale || 0) - (b.venduti || 0);
+
+        // Zero stock in fondo
+        if (aStock === 0 && bStock > 0) return 1;
+        if (bStock === 0 && aStock > 0) return -1;
+
+        // Lotto 2 prima di Lotto 1
+        const aLotto = parseInt(a.lotto) || 0;
+        const bLotto = parseInt(b.lotto) || 0;
+        return bLotto - aLotto;
+      });
+    }
+
+    // Ordinamento per maglie/tute: in magazzino prima, vendute in fondo
+    if (currentTab === 'maglie') {
+      const statoOrder: Record<string, number> = { 'Da preparare': 1, 'Da arrivare': 2, 'In magazzino': 3, 'Venduta': 4 };
+      items.sort((a: any, b: any) => (statoOrder[a.stato] || 5) - (statoOrder[b.stato] || 5));
+    }
+
+    if (currentTab === 'tute') {
+      items.sort((a: any, b: any) => {
+        if (a.stato === 'Venduto' && b.stato !== 'Venduto') return 1;
+        if (b.stato === 'Venduto' && a.stato !== 'Venduto') return -1;
+        return 0;
+      });
     }
 
     // Ordinamento per la tab vendite
@@ -250,8 +283,8 @@ import Layout from '../layouts/Layout.astro';
 
     const displayCols = cols.slice(0, 5); // Mostra prime 5 colonne
 
-    // Per la tab vendite, aggiungi colonna immagine all'inizio
-    const showVenditeImage = currentTab === 'vendite';
+    // Mostra colonna icona per ogni tab
+    const showIconColumn = true;
 
     // Header con controlli di ordinamento per vendite
     const getSortIcon = (field: string) => {
@@ -262,13 +295,27 @@ import Layout from '../layouts/Layout.astro';
 
     const sortableFields = ['data', 'categoria', 'prodotto'];
 
+    // Icone per ogni categoria
+    const getIconHtml = (tab: string, categoria?: string) => {
+      if (tab === 'vendite' && categoria) {
+        if (categoria === 'Patch') return '<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg></div>';
+        if (categoria === 'Maglia') return '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>';
+        if (categoria === 'Tuta') return '<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg></div>';
+      }
+      if (tab === 'patch') return '<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg></div>';
+      if (tab === 'maglie') return '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>';
+      if (tab === 'tute') return '<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg></div>';
+      if (tab === 'richieste') return '<div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>';
+      return '<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>';
+    };
+
     let html = `
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b text-left text-gray-500">
-            ${showVenditeImage ? '<th class="pb-3 pr-4">Foto</th>' : ''}
+            ${showIconColumn ? '<th class="pb-3 pr-4"></th>' : ''}
             ${displayCols.map(col => {
-              if (showVenditeImage && sortableFields.includes(col.key)) {
+              if (currentTab === 'vendite' && sortableFields.includes(col.key)) {
                 return `<th class="pb-3 pr-4">
                   <button class="sort-btn flex items-center gap-1 hover:text-blue-600 transition-colors" data-field="${col.key}">
                     ${col.label}
@@ -286,29 +333,17 @@ import Layout from '../layouts/Layout.astro';
 
     items.forEach((item: any, i: number) => {
       const originalIndex = originalIndices[i];
-      html += `<tr class="border-b last:border-0 hover:bg-gray-50">`;
+      // Determina il nome per la ricerca
+      const searchName = (item.prodotto || item.maglia || item.tipo || item.descrizione || '').toLowerCase();
+      html += `<tr class="border-b last:border-0 hover:bg-gray-50 data-row" data-name="${searchName}">`;
 
-      // Per vendite, mostra la miniatura del prodotto
-      if (showVenditeImage) {
-        const immagine = getImmagineVendita(item.categoria, item.prodotto);
-        if (immagine) {
-          html += `<td class="py-3 pr-4"><img src="${immagine}" alt="Img" class="w-12 h-12 object-cover rounded-lg" /></td>`;
-        } else {
-          html += `<td class="py-3 pr-4"><div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></td>`;
-        }
+      // Mostra icona per ogni riga
+      if (showIconColumn) {
+        html += `<td class="py-3 pr-4">${getIconHtml(currentTab, item.categoria)}</td>`;
       }
 
       displayCols.forEach(col => {
         let value = item[col.key];
-        if (col.type === 'image') {
-          // Mostra thumbnail immagine
-          if (value) {
-            html += `<td class="py-3 pr-4"><img src="${value}" alt="Img" class="w-12 h-12 object-cover rounded-lg" /></td>`;
-          } else {
-            html += `<td class="py-3 pr-4"><div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></td>`;
-          }
-          return;
-        }
         // Mostra categoria con pallino colorato
         if (col.key === 'categoria' && categoryColors[value]) {
           const colors = categoryColors[value];
@@ -405,15 +440,12 @@ import Layout from '../layouts/Layout.astro';
     if (currentTab !== 'maglie') return;
 
     const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="patch_select"]:checked');
-    const selectedPatches: string[] = [];
     let costoPatch = 0;
 
     checkboxes.forEach(cb => {
-      selectedPatches.push(cb.value);
-      const patch = data.patch.find((p: any) => p.prodotto === cb.value);
-      if (patch) {
-        costoPatch += patch.costoUnitario;
-      }
+      // Prendi il costo direttamente dal data attribute
+      const costo = parseFloat(cb.getAttribute('data-costo') || '0');
+      costoPatch += costo;
     });
 
     const costoMagliaInput = document.querySelector<HTMLInputElement>('input[name="costoMaglia"]');
@@ -430,7 +462,9 @@ import Layout from '../layouts/Layout.astro';
   // Apri modal
   function openModal(index = -1) {
     editingIndex = index;
-    const cols = fields[currentTab];
+    // Per nuove vendite usa il form multi-prodotto
+    const colsKey = (currentTab === 'vendite' && index < 0) ? 'vendite_new' : currentTab;
+    const cols = fields[colsKey];
     const item = index >= 0 ? data[currentTab][index] : {};
 
     modalTitle.textContent = index >= 0 ? 'Modifica elemento' : 'Aggiungi elemento';
@@ -444,25 +478,39 @@ import Layout from '../layouts/Layout.astro';
       // Gestione speciale per patches nelle maglie
       if (col.type === 'patches') {
         const selectedPatches = item.patches || [];
+        const selectedPatchIds = item.patch_ids || [];
+        // Filtra solo patch con disponibilità > 0
+        const availablePatches = data.patch.filter((p: any) => {
+          const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+          // Mostra se ha disponibilità O se è già selezionata per questa maglia
+          return disp > 0 || selectedPatchIds.includes(p.id) || selectedPatches.includes(p.prodotto);
+        });
         formHtml += `
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">${col.label}</label>
-            <div class="space-y-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
-              ${data.patch.map((p: any) => `
-                <label class="flex items-center gap-2 cursor-pointer">
+            <div class="space-y-2 p-3 border border-gray-200 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
+              ${availablePatches.map((p: any) => {
+                const lottoLabel = p.lotto ? ` [${p.lotto}]` : '';
+                const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+                const isSelected = selectedPatchIds.includes(p.id) || selectedPatches.includes(p.prodotto);
+                return `
+                <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded">
                   <input
                     type="checkbox"
                     name="patch_select"
-                    value="${p.prodotto}"
-                    ${selectedPatches.includes(p.prodotto) ? 'checked' : ''}
+                    value="${p.id}"
+                    data-costo="${p.costoUnitario}"
+                    data-nome="${p.prodotto}${lottoLabel}"
+                    ${isSelected ? 'checked' : ''}
                     class="patch-checkbox w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
-                  <span class="text-sm">${p.prodotto}</span>
-                  <span class="text-xs text-gray-500">(${p.costoUnitario.toFixed(2)} EUR)</span>
+                  <span class="text-sm">${p.prodotto}${lottoLabel}</span>
+                  <span class="text-xs text-gray-500">(${p.costoUnitario.toFixed(2)}€ - ${disp} disp.)</span>
                 </label>
-              `).join('')}
+              `}).join('')}
             </div>
             <input type="hidden" name="patches" />
+            <input type="hidden" name="patch_ids" />
           </div>
         `;
       } else if (currentTab === 'maglie' && (col.key === 'costoPatch' || col.key === 'costoTotale')) {
@@ -480,38 +528,111 @@ import Layout from '../layouts/Layout.astro';
             />
           </div>
         `;
-      } else if (col.type === 'image') {
-        // Campo immagine con preview
+      } else if (col.type === 'multi_products') {
+        // Form speciale per vendite multiple
         formHtml += `
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">${col.label}</label>
-            <div id="image-preview" class="mb-3 ${value ? '' : 'hidden'}">
-              <img src="${value || ''}" alt="Preview" class="max-h-40 mx-auto rounded-lg shadow border" />
-            </div>
-            <label class="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer">
-              <div id="upload-placeholder" class="${value ? 'hidden' : ''}">
-                <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p class="text-sm text-gray-500">Clicca per selezionare un'immagine</p>
+            <div id="products-container" class="space-y-3">
+              <div class="product-row flex gap-2 items-end p-3 bg-gray-50 rounded-lg">
+                <div class="flex-1">
+                  <label class="block text-xs text-gray-500 mb-1">Categoria</label>
+                  <select name="prod_categoria[]" class="prod-categoria w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                    <option value="Patch">Patch</option>
+                    <option value="Tuta">Tuta</option>
+                    <option value="Maglia">Maglia</option>
+                  </select>
+                </div>
+                <div class="flex-[2]">
+                  <label class="block text-xs text-gray-500 mb-1">Prodotto</label>
+                  <select name="prod_prodotto[]" class="prod-prodotto w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                    ${data.patch.filter((p: any) => {
+                      const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+                      return disp > 0;
+                    }).map((p: any) => {
+                      const lottoLabel = p.lotto ? ` [${p.lotto}]` : '';
+                      const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+                      return `<option value="${p.id}">${p.prodotto}${lottoLabel} (${disp} disp. - ${p.costoUnitario}€)</option>`;
+                    }).join('')}
+                  </select>
+                </div>
+                <div class="w-20">
+                  <label class="block text-xs text-gray-500 mb-1">Qtà</label>
+                  <input type="number" name="prod_quantita[]" value="1" min="1" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                </div>
+                <div class="w-24">
+                  <label class="block text-xs text-gray-500 mb-1">Prezzo €</label>
+                  <input type="number" name="prod_totale[]" step="0.01" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+                </div>
+                <button type="button" class="btn-remove-product p-1.5 text-red-500 hover:bg-red-50 rounded hidden">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <p id="upload-placeholder-change" class="${value ? '' : 'hidden'} text-sm text-blue-600">Clicca per cambiare immagine</p>
-              <input
-                type="file"
-                id="image-input"
-                accept="image/*"
-                class="hidden"
-              />
-            </label>
-            <input type="hidden" name="immagine" value="${value || ''}" id="image-path" />
-            <p id="upload-status" class="text-xs text-gray-500 mt-2"></p>
+            </div>
+            <button type="button" id="btn-add-product" class="mt-3 px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Aggiungi prodotto
+            </button>
+          </div>
+        `;
+      } else if (col.type === 'product_select') {
+        // Dropdown prodotti per vendite esistenti
+        const categoria = item.categoria || 'Patch';
+        let productOptions = '';
+
+        if (categoria === 'Patch') {
+          // Filtra patch con disponibilità > 0, ma includi sempre quella attualmente selezionata
+          productOptions = data.patch.filter((p: any) => {
+            const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+            const isSelected = value === p.prodotto || value === `${p.prodotto} [${p.lotto}]` || (item.prodotto_id && item.prodotto_id == p.id);
+            return disp > 0 || isSelected;
+          }).map((p: any) => {
+            const lottoLabel = p.lotto ? ` [${p.lotto}]` : '';
+            const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+            const selected = value === p.prodotto || value === `${p.prodotto} [${p.lotto}]` || (item.prodotto_id && item.prodotto_id == p.id) ? 'selected' : '';
+            return `<option value="${p.id}" ${selected}>${p.prodotto}${lottoLabel} (${disp} disp.)</option>`;
+          }).join('');
+        } else if (categoria === 'Tuta') {
+          // Filtra tute disponibili, ma includi sempre quella attualmente selezionata
+          productOptions = data.tute.filter((t: any) => {
+            const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
+            const isSelected = value === nome || value?.includes(t.squadra);
+            return t.stato === 'In magazzino' || isSelected;
+          }).map((t: any) => {
+            const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
+            const selected = value === nome || value?.includes(t.squadra) ? 'selected' : '';
+            return `<option value="${nome}" ${selected}>${nome} [${t.stato}]</option>`;
+          }).join('');
+        } else if (categoria === 'Maglia') {
+          // Filtra maglie disponibili, ma includi sempre quella attualmente selezionata
+          productOptions = data.maglie.filter((m: any) => {
+            const nome = `${m.maglia} ${m.stagione}`;
+            const isSelected = value === nome || value?.includes(m.maglia);
+            return m.stato === 'In magazzino' || isSelected;
+          }).map((m: any) => {
+            const nome = `${m.maglia} ${m.stagione}`;
+            const selected = value === nome || value?.includes(m.maglia) ? 'selected' : '';
+            return `<option value="${nome}" ${selected}>${nome} [${m.stato}]</option>`;
+          }).join('');
+        }
+
+        formHtml += `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${col.label}</label>
+            <select name="${col.key}" id="edit-prodotto-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              ${productOptions || '<option value="">Nessun prodotto</option>'}
+            </select>
           </div>
         `;
       } else if (col.type === 'select') {
         formHtml += `
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">${col.label}</label>
-            <select name="${col.key}" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <select name="${col.key}" ${col.key === 'categoria' && currentTab === 'vendite' ? 'id="edit-categoria-select"' : ''} class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
               ${col.options!.map(opt => `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`).join('')}
             </select>
           </div>
@@ -532,9 +653,6 @@ import Layout from '../layouts/Layout.astro';
       }
     });
 
-    // Reset uploaded image path
-    uploadedImagePath = item.immagine || '';
-
     editForm.innerHTML = formHtml;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -552,63 +670,148 @@ import Layout from '../layouts/Layout.astro';
       calcolaCostiMaglia();
     }
 
-    // Aggiungi event listener per upload immagine
-    const imageInput = document.getElementById('image-input') as HTMLInputElement;
-    if (imageInput) {
-      imageInput.addEventListener('change', handleImageUpload);
+    // Event listeners per vendite multiple
+    if (currentTab === 'vendite' && index < 0) {
+      setupMultiProductsForm();
+    }
+
+    // Event listener per cambio categoria in edit vendite
+    if (currentTab === 'vendite' && index >= 0) {
+      const categoriaSelect = document.getElementById('edit-categoria-select') as HTMLSelectElement;
+      const prodottoSelect = document.getElementById('edit-prodotto-select') as HTMLSelectElement;
+
+      if (categoriaSelect && prodottoSelect) {
+        categoriaSelect.addEventListener('change', () => {
+          const cat = categoriaSelect.value;
+          let options = '';
+
+          if (cat === 'Patch') {
+            // Filtra solo patch con disponibilità > 0
+            options = data.patch.filter((p: any) => {
+              const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+              return disp > 0;
+            }).map((p: any) => {
+              const lottoLabel = p.lotto ? ` [${p.lotto}]` : '';
+              const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+              return `<option value="${p.id}">${p.prodotto}${lottoLabel} (${disp} disp.)</option>`;
+            }).join('');
+          } else if (cat === 'Tuta') {
+            options = data.tute.map((t: any) => {
+              const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
+              return `<option value="${nome}">${nome} [${t.stato}]</option>`;
+            }).join('');
+          } else if (cat === 'Maglia') {
+            options = data.maglie.map((m: any) => {
+              const nome = `${m.maglia} ${m.stagione}`;
+              return `<option value="${nome}">${nome} [${m.stato}]</option>`;
+            }).join('');
+          }
+
+          prodottoSelect.innerHTML = options || '<option value="">Nessun prodotto</option>';
+        });
+      }
     }
   }
 
-  // Gestione upload immagine
-  async function handleImageUpload(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
+  // Setup form prodotti multipli per vendite
+  function setupMultiProductsForm() {
+    const container = document.getElementById('products-container');
+    const btnAdd = document.getElementById('btn-add-product');
 
-    const statusEl = document.getElementById('upload-status');
-    const previewEl = document.getElementById('image-preview');
-    const placeholderEl = document.getElementById('upload-placeholder');
-    const placeholderChangeEl = document.getElementById('upload-placeholder-change');
-    const pathInput = document.getElementById('image-path') as HTMLInputElement;
+    if (!container || !btnAdd) return;
 
-    if (statusEl) {
-      statusEl.textContent = 'Caricamento in corso...';
-      statusEl.className = 'text-xs text-blue-600 mt-2 animate-pulse';
+    // Aggiorna dropdown prodotti quando cambia categoria
+    function updateProductDropdown(row: Element) {
+      const catSelect = row.querySelector('.prod-categoria') as HTMLSelectElement;
+      const prodSelect = row.querySelector('.prod-prodotto') as HTMLSelectElement;
+
+      if (!catSelect || !prodSelect) return;
+
+      const categoria = catSelect.value;
+      let options = '';
+
+      if (categoria === 'Patch') {
+        // Filtra solo patch con disponibilità > 0
+        const disponibili = data.patch.filter((p: any) => {
+          const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+          return disp > 0;
+        });
+        options = disponibili.map((p: any) => {
+          const lottoLabel = p.lotto ? ` [${p.lotto}]` : '';
+          const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+          return `<option value="${p.id}">${p.prodotto}${lottoLabel} (${disp} disp. - ${p.costoUnitario}€)</option>`;
+        }).join('');
+      } else if (categoria === 'Tuta') {
+        const disponibili = data.tute.filter((t: any) => t.stato === 'In magazzino');
+        options = disponibili.map((t: any) => `<option value="${t.tipo} ${t.squadra} ${t.stagione}">${t.tipo} ${t.squadra} ${t.stagione}</option>`).join('');
+      } else if (categoria === 'Maglia') {
+        const disponibili = data.maglie.filter((m: any) => m.stato === 'In magazzino');
+        options = disponibili.map((m: any) => `<option value="${m.maglia} ${m.stagione}">${m.maglia} ${m.stagione}</option>`).join('');
+      }
+
+      prodSelect.innerHTML = options || '<option value="">Nessun prodotto disponibile</option>';
     }
 
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
+    // Aggiungi riga prodotto
+    function addProductRow() {
+      const newRow = document.createElement('div');
+      newRow.className = 'product-row flex gap-2 items-end p-3 bg-gray-50 rounded-lg';
+      newRow.innerHTML = `
+        <div class="flex-1">
+          <label class="block text-xs text-gray-500 mb-1">Categoria</label>
+          <select name="prod_categoria[]" class="prod-categoria w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+            <option value="Patch">Patch</option>
+            <option value="Tuta">Tuta</option>
+            <option value="Maglia">Maglia</option>
+          </select>
+        </div>
+        <div class="flex-[2]">
+          <label class="block text-xs text-gray-500 mb-1">Prodotto</label>
+          <select name="prod_prodotto[]" class="prod-prodotto w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+            ${data.patch.filter((p: any) => {
+              const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+              return disp > 0;
+            }).map((p: any) => {
+              const lottoLabel = p.lotto ? ' [' + p.lotto + ']' : '';
+              const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
+              return '<option value="' + p.id + '">' + p.prodotto + lottoLabel + ' (' + disp + ' disp. - ' + p.costoUnitario + '€)</option>';
+            }).join('')}
+          </select>
+        </div>
+        <div class="w-20">
+          <label class="block text-xs text-gray-500 mb-1">Qtà</label>
+          <input type="number" name="prod_quantita[]" value="1" min="1" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+        </div>
+        <div class="w-24">
+          <label class="block text-xs text-gray-500 mb-1">Prezzo €</label>
+          <input type="number" name="prod_totale[]" step="0.01" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" />
+        </div>
+        <button type="button" class="btn-remove-product p-1.5 text-red-500 hover:bg-red-50 rounded">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      `;
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
+      container.appendChild(newRow);
 
-      const result = await res.json();
+      // Aggiungi event listeners
+      const catSelect = newRow.querySelector('.prod-categoria');
+      catSelect?.addEventListener('change', () => updateProductDropdown(newRow));
 
-      if (result.success) {
-        uploadedImagePath = result.path;
-        if (pathInput) pathInput.value = result.path;
-        if (previewEl) {
-          previewEl.innerHTML = `<img src="${result.path}" alt="Preview" class="max-h-40 mx-auto rounded-lg shadow border" />`;
-          previewEl.classList.remove('hidden');
-        }
-        if (placeholderEl) placeholderEl.classList.add('hidden');
-        if (placeholderChangeEl) placeholderChangeEl.classList.remove('hidden');
-        if (statusEl) {
-          statusEl.textContent = 'Immagine caricata con successo!';
-          statusEl.className = 'text-xs text-green-600 mt-2';
-        }
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      if (statusEl) {
-        statusEl.textContent = 'Errore durante il caricamento';
-        statusEl.className = 'text-xs text-red-600 mt-2';
-      }
+      const btnRemove = newRow.querySelector('.btn-remove-product');
+      btnRemove?.addEventListener('click', () => newRow.remove());
+    }
+
+    // Event listener per aggiungere prodotto
+    btnAdd.addEventListener('click', addProductRow);
+
+    // Setup iniziale per la prima riga
+    const firstRow = container.querySelector('.product-row');
+    if (firstRow) {
+      const catSelect = firstRow.querySelector('.prod-categoria');
+      catSelect?.addEventListener('change', () => updateProductDropdown(firstRow));
+      updateProductDropdown(firstRow);
     }
   }
 
@@ -625,19 +828,101 @@ import Layout from '../layouts/Layout.astro';
     const formData = new FormData(editForm as HTMLFormElement);
     const cols = fields[currentTab];
 
+    // Gestione speciale per vendite con prodotti multipli
+    if (currentTab === 'vendite' && editingIndex < 0) {
+      const data_vendita = formData.get('data') as string;
+      const piattaforma = formData.get('piattaforma') as string;
+      const cliente = formData.get('cliente') as string;
+
+      const categorie = formData.getAll('prod_categoria[]') as string[];
+      const prodotti = formData.getAll('prod_prodotto[]') as string[];
+      const quantita = formData.getAll('prod_quantita[]') as string[];
+      const totali = formData.getAll('prod_totale[]') as string[];
+
+      if (prodotti.length === 0 || !prodotti[0]) {
+        showToast('Seleziona almeno un prodotto', 'error');
+        return;
+      }
+
+      try {
+        for (let i = 0; i < prodotti.length; i++) {
+          if (!prodotti[i]) continue;
+
+          // Per le patch, il valore è l'ID - trova il nome prodotto
+          let prodottoNome = prodotti[i];
+          let prodottoId = null;
+          if (categorie[i] === 'Patch') {
+            const patchItem = data.patch.find((p: any) => p.id == prodotti[i]);
+            if (patchItem) {
+              prodottoNome = patchItem.lotto ? `${patchItem.prodotto} [${patchItem.lotto}]` : patchItem.prodotto;
+              prodottoId = patchItem.id;
+            }
+          }
+
+          const vendita = {
+            data: data_vendita,
+            categoria: categorie[i],
+            prodotto: prodottoNome,
+            prodotto_id: prodottoId,
+            quantita: parseInt(quantita[i]) || 1,
+            totale: parseFloat(totali[i]) || 0,
+            piattaforma: piattaforma,
+            cliente: cliente
+          };
+
+          await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collection: 'vendite', item: vendita })
+          });
+        }
+
+        showToast(`${prodotti.filter(p => p).length} vendite aggiunte con successo`);
+        await loadData();
+        closeModal();
+        return;
+      } catch (error) {
+        showToast('Errore durante il salvataggio', 'error');
+        return;
+      }
+    }
+
     const item: any = {};
+    const categoriaValue = formData.get('categoria') as string;
+
     cols.forEach(col => {
       let value: any = formData.get(col.key);
       if (col.type === 'number') {
         value = parseFloat(value as string) || 0;
       }
+      // Gestione speciale per product_select nelle vendite
+      if (col.type === 'product_select' && currentTab === 'vendite') {
+        if (categoriaValue === 'Patch') {
+          // Il valore è l'ID della patch, convertiamo in nome
+          const patchItem = data.patch.find((p: any) => p.id == value);
+          if (patchItem) {
+            item['prodotto'] = patchItem.lotto ? `${patchItem.prodotto} [${patchItem.lotto}]` : patchItem.prodotto;
+            item['prodotto_id'] = patchItem.id;
+          } else {
+            item['prodotto'] = value;
+          }
+        } else {
+          item['prodotto'] = value;
+        }
+        return;
+      }
       // Gestione speciale per patches nelle maglie (checkbox multiple)
       if (col.type === 'patches' || (currentTab === 'maglie' && col.key === 'patches')) {
         const checkboxes = document.querySelectorAll<HTMLInputElement>('input[name="patch_select"]:checked');
-        value = Array.from(checkboxes).map(cb => cb.value);
+        // Salva i nomi con lotto
+        value = Array.from(checkboxes).map(cb => cb.getAttribute('data-nome') || cb.value);
+        // Salva anche gli ID per tracking
+        item['patch_ids'] = Array.from(checkboxes).map(cb => parseInt(cb.value));
       } else if (col.key === 'patches' && typeof value === 'string') {
         value = value.split(',').map(s => s.trim()).filter(s => s);
       }
+      // Salta il campo multi_products che viene gestito sopra
+      if (col.type === 'multi_products') return;
       item[col.key] = value;
     });
 
@@ -736,12 +1021,30 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // Event listeners
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+
+  // Filtro ricerca live
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.data-row');
+
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      if (query === '' || name.includes(query)) {
+        (row as HTMLElement).style.display = '';
+      } else {
+        (row as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('data-active', 'false'));
       btn.setAttribute('data-active', 'true');
       currentTab = btn.getAttribute('data-tab')!;
       sectionTitle.textContent = btn.textContent!.trim();
+      searchInput.value = ''; // Reset filtro quando cambi tab
       renderTable();
     });
   });

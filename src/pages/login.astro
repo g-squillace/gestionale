@@ -14,61 +14,26 @@ if (authCookie?.value === 'authenticated') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Gestionale Magazzino</title>
+  <title>Login - King delle Patch</title>
   <style>
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
       50% { transform: translateY(-10px); }
     }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-      50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
-    }
-    @keyframes gradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
     .animate-float { animation: float 3s ease-in-out infinite; }
-    .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-    .animate-gradient {
-      background-size: 200% 200%;
-      animation: gradient 8s ease infinite;
-    }
-    .glass {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-    }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 animate-gradient flex items-center justify-center p-4 relative overflow-hidden">
+<body class="min-h-screen bg-black flex items-center justify-center p-4">
 
-  <!-- Elementi decorativi di sfondo -->
-  <div class="absolute inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
-    <div class="absolute bottom-20 right-10 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl"></div>
-  </div>
-
-  <!-- Pattern griglia -->
-  <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-
-  <div class="w-full max-w-md relative z-10">
+  <div class="w-full max-w-md">
     <!-- Card principale -->
-    <div class="glass rounded-3xl shadow-2xl p-8 border border-white/20">
+    <div class="bg-white rounded-3xl shadow-2xl p-8">
 
-      <!-- Header con logo animato -->
+      <!-- Header con logo -->
       <div class="text-center mb-8">
-        <div class="animate-float mb-6">
-          <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl animate-pulse-glow">
-            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
+        <div class="animate-float mb-4">
+          <img src="/logo.jpg" alt="King delle Patch" class="w-40 h-40 mx-auto object-contain" />
         </div>
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-          Gestionale Magazzino
-        </h1>
         <p class="text-slate-500 mt-2 text-sm">Inserisci le credenziali per accedere</p>
       </div>
 
@@ -87,7 +52,7 @@ if (authCookie?.value === 'authenticated') {
               name="username"
               required
               autocomplete="username"
-              class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-slate-800 placeholder-slate-400"
+              class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400"
               placeholder="Inserisci nome utente"
             />
           </div>
@@ -106,7 +71,7 @@ if (authCookie?.value === 'authenticated') {
               name="password"
               required
               autocomplete="current-password"
-              class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-slate-800 placeholder-slate-400"
+              class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400"
               placeholder="Inserisci password"
             />
           </div>
@@ -123,31 +88,14 @@ if (authCookie?.value === 'authenticated') {
         <!-- Pulsante submit -->
         <button
           type="submit"
-          class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:-translate-y-0.5 active:translate-y-0"
+          class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-white py-4 rounded-xl font-semibold hover:from-amber-600 hover:to-amber-700 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:shadow-amber-500/25 transform hover:-translate-y-0.5 active:translate-y-0"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
           </svg>
-          Accedi al Gestionale
+          Accedi
         </button>
       </form>
-
-      <!-- Footer -->
-      <div class="mt-8 pt-6 border-t border-slate-200">
-        <p class="text-center text-xs text-slate-400">
-          Sistema di gestione magazzino protetto
-        </p>
-      </div>
-    </div>
-
-    <!-- Badge sicurezza -->
-    <div class="mt-6 flex justify-center">
-      <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-full border border-white/20">
-        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-        <span class="text-xs text-white/70">Connessione sicura</span>
-      </div>
     </div>
   </div>
 
@@ -191,7 +139,7 @@ if (authCookie?.value === 'authenticated') {
             </svg>
             <span>Accesso riuscito!</span>
           `;
-          submitBtn.classList.remove('from-blue-600', 'to-indigo-600');
+          submitBtn.classList.remove('from-amber-500', 'to-amber-600');
           submitBtn.classList.add('from-green-500', 'to-emerald-500');
           setTimeout(() => {
             window.location.href = '/';
@@ -200,9 +148,6 @@ if (authCookie?.value === 'authenticated') {
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalContent;
           errorMessage.classList.remove('hidden');
-          // Shake animation
-          form.classList.add('animate-shake');
-          setTimeout(() => form.classList.remove('animate-shake'), 500);
         }
       } catch (error) {
         submitBtn.disabled = false;

@@ -1,129 +1,145 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
-import { Tags, Package, ShoppingBag } from 'lucide-astro';
+import { Tags, Package, ShoppingBag, Search } from 'lucide-astro';
 
 const { data: patch } = await supabase.from('patch').select('*');
 const patchData = patch || [];
 
-const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + ' EUR';
+const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + '€';
 
 // Calcola totali
-const totaleInMagazzino = patchData.reduce((acc, p) => acc + p.in_magazzino, 0);
+const totaleInMagazzino = patchData.reduce((acc, p) => acc + (p.quantita_iniziale - p.venduti), 0);
 const totaleVenduti = patchData.reduce((acc, p) => acc + p.venduti, 0);
 const totaleProfitto = patchData.reduce((acc, p) => acc + p.profitto, 0);
+const totaleRicavi = patchData.reduce((acc, p) => acc + p.ricavo_vendite, 0);
+
+// Ordinamento: Lotto 2 prima, poi Lotto 1, poi quelli a 0 in magazzino in fondo
+const sortedData = [...patchData].sort((a, b) => {
+  const aStock = a.quantita_iniziale - a.venduti;
+  const bStock = b.quantita_iniziale - b.venduti;
+
+  // Prima quelli con stock > 0, poi quelli a 0
+  if (aStock === 0 && bStock > 0) return 1;
+  if (bStock === 0 && aStock > 0) return -1;
+
+  // Tra quelli con stock > 0: Lotto 2 prima di Lotto 1
+  const aLotto = parseInt(a.lotto) || 0;
+  const bLotto = parseInt(b.lotto) || 0;
+  return bLotto - aLotto; // Ordine decrescente per lotto
+});
 ---
 
 <Layout title="Patch">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
-      <div class="p-3 bg-blue-100 rounded-xl">
-        <Tags class="w-8 h-8 text-blue-600" />
-      </div>
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+      <Tags class="w-6 h-6 text-blue-600" />
       Inventario Patch
     </h1>
-    <div class="flex gap-4">
-      <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg flex items-center gap-2">
+    <div class="flex gap-3 text-sm">
+      <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
         <Package class="w-4 h-4" />
-        <span class="text-sm">In Magazzino:</span>
-        <span class="font-bold">{totaleInMagazzino}</span>
+        <span class="font-semibold">{totaleInMagazzino}</span>
       </div>
-      <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg flex items-center gap-2">
+      <div class="bg-green-50 text-green-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
         <ShoppingBag class="w-4 h-4" />
-        <span class="text-sm">Venduti:</span>
-        <span class="font-bold">{totaleVenduti}</span>
+        <span class="font-semibold">{totaleVenduti}</span>
       </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {patchData.map((p) => (
-      <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex items-center gap-4">
-          {p.immagine ? (
-            <img src={p.immagine} alt={p.prodotto} class="w-16 h-16 object-cover rounded-lg border-2 border-white/30" />
-          ) : (
-            <div class="w-16 h-16 bg-blue-400/30 rounded-lg flex items-center justify-center">
-              <Tags class="w-8 h-8 text-white/70" />
-            </div>
-          )}
-          <h2 class="text-xl font-semibold text-white">{p.prodotto}</h2>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-sm text-gray-500">In Magazzino</div>
-              <div class="text-2xl font-bold text-blue-600">{p.in_magazzino}</div>
-            </div>
-            <div>
-              <div class="text-sm text-gray-500">Venduti / Usati</div>
-              <div class="text-2xl font-bold text-gray-700">{p.venduti}</div>
-            </div>
-            <div>
-              <div class="text-sm text-gray-500">Quantita Iniziale</div>
-              <div class="text-lg font-medium">{p.quantita_iniziale}</div>
-            </div>
-            <div>
-              <div class="text-sm text-gray-500">Costo Unitario</div>
-              <div class="text-lg font-medium">{formatEuro(p.costo_unitario)}</div>
-            </div>
-          </div>
+  <!-- Filtro ricerca -->
+  <div class="mb-4">
+    <div class="relative max-w-md">
+      <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Cerca per nome..."
+        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      />
+    </div>
+  </div>
 
-          <hr class="my-4" />
-
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="text-sm text-gray-500">Ricavo Vendite</div>
-              <div class="text-lg font-semibold text-green-600">{formatEuro(p.ricavo_vendite)}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-sm text-gray-500">Profitto</div>
-              <div class={`text-xl font-bold ${p.profitto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatEuro(p.profitto)}
+  <!-- Tabella -->
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <table class="w-full">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+          <th class="px-4 py-3">Prodotto</th>
+          <th class="px-4 py-3">Lotto</th>
+          <th class="px-4 py-3 text-center">Magazzino</th>
+          <th class="px-4 py-3 text-center">Venduti</th>
+          <th class="px-4 py-3 text-center">Q.tà Iniz.</th>
+          <th class="px-4 py-3 text-right">Costo Unit.</th>
+          <th class="px-4 py-3 text-right">Ricavo</th>
+          <th class="px-4 py-3 text-right">Profitto</th>
+        </tr>
+      </thead>
+      <tbody id="table-body" class="divide-y divide-slate-100">
+        {sortedData.map((p) => (
+          <tr class="hover:bg-slate-50 transition-colors data-row" data-name={p.prodotto.toLowerCase()}>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                  <Tags class="w-4 h-4 text-blue-500" />
+                </div>
+                <span class="font-medium text-slate-800">{p.prodotto}</span>
               </div>
-            </div>
-          </div>
-
-          <!-- Barra progresso -->
-          <div class="mt-4">
-            <div class="text-xs text-gray-500 mb-1">Disponibilita</div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                class="bg-blue-500 h-2.5 rounded-full"
-                style={`width: ${Math.round((p.in_magazzino / p.quantita_iniziale) * 100)}%`}
-              ></div>
-            </div>
-            <div class="text-xs text-gray-500 mt-1 text-right">
-              {Math.round((p.in_magazzino / p.quantita_iniziale) * 100)}% disponibile
-            </div>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-
-  <!-- Riepilogo -->
-  <div class="mt-8 bg-white rounded-xl shadow-md p-6">
-    <h2 class="text-xl font-semibold text-slate-700 mb-4">Riepilogo Totale</h2>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="text-center p-4 bg-blue-50 rounded-lg">
-        <div class="text-sm text-blue-600">Articoli in Magazzino</div>
-        <div class="text-2xl font-bold text-blue-700">{totaleInMagazzino}</div>
-      </div>
-      <div class="text-center p-4 bg-gray-50 rounded-lg">
-        <div class="text-sm text-gray-600">Articoli Venduti</div>
-        <div class="text-2xl font-bold text-gray-700">{totaleVenduti}</div>
-      </div>
-      <div class="text-center p-4 bg-emerald-50 rounded-lg">
-        <div class="text-sm text-emerald-600">Ricavo Totale</div>
-        <div class="text-2xl font-bold text-emerald-700">{formatEuro(patchData.reduce((acc, p) => acc + p.ricavo_vendite, 0))}</div>
-      </div>
-      <div class="text-center p-4 bg-green-50 rounded-lg">
-        <div class="text-sm text-green-600">Profitto Totale</div>
-        <div class={`text-2xl font-bold ${totaleProfitto >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-          {formatEuro(totaleProfitto)}
-        </div>
-      </div>
-    </div>
+            </td>
+            <td class="px-4 py-3 text-slate-500 text-sm">{p.lotto || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              <span class={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-semibold ${(p.quantita_iniziale - p.venduti) > 5 ? 'bg-blue-100 text-blue-700' : (p.quantita_iniziale - p.venduti) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                {p.quantita_iniziale - p.venduti}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center text-slate-600">{p.venduti}</td>
+            <td class="px-4 py-3 text-center text-slate-500 text-sm">{p.quantita_iniziale}</td>
+            <td class="px-4 py-3 text-right text-slate-600 text-sm">{formatEuro(p.costo_unitario)}</td>
+            <td class="px-4 py-3 text-right text-green-600 font-medium">{formatEuro(p.ricavo_vendite)}</td>
+            <td class="px-4 py-3 text-right">
+              <span class={`font-semibold ${p.profitto >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatEuro(p.profitto)}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+        <tr class="font-semibold text-slate-700">
+          <td class="px-4 py-3">Totale ({patchData.length} prodotti)</td>
+          <td class="px-4 py-3"></td>
+          <td class="px-4 py-3 text-center text-blue-700">{totaleInMagazzino}</td>
+          <td class="px-4 py-3 text-center">{totaleVenduti}</td>
+          <td class="px-4 py-3 text-center">{patchData.reduce((acc, p) => acc + p.quantita_iniziale, 0)}</td>
+          <td class="px-4 py-3"></td>
+          <td class="px-4 py-3 text-right text-green-600">{formatEuro(totaleRicavi)}</td>
+          <td class="px-4 py-3 text-right">
+            <span class={totaleProfitto >= 0 ? 'text-green-600' : 'text-red-600'}>
+              {formatEuro(totaleProfitto)}
+            </span>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
   </div>
 </Layout>
+
+<script>
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const rows = document.querySelectorAll('.data-row');
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase().trim();
+
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name') || '';
+      if (query === '' || name.includes(query)) {
+        (row as HTMLElement).style.display = '';
+      } else {
+        (row as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+</script>
