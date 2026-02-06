@@ -3,7 +3,27 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(netlify deploy:*)",
+      "Bash(netlify status:*)",
+      "Bash(netlify sites:create:*)",
+      "Bash(netlify env:set:*)",
+      "Bash(netlify link:*)",
+      "Bash(netlify env:list:*)",
+      "Bash(netlify sites:delete:*)",
+      "Bash(netlify unlink:*)",
+      "Bash(netlify sites:list:*)",
+      "Bash(netlify logout:*)",
+      "Bash(netlify login:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAggiunta filtro ricerca e ordinamento a tutte le viste\n\n- Filtro ricerca live per nome in patch, maglie, tute, admin\n- Ordinamento: Lotto 2 prima, Lotto 1 dopo, esauriti in fondo\n- Sincronizzazione inventario patch con maglie\n- Calcolo automatico costo patch nelle maglie\n- Fix gestione patches come JSON string\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(netlify api:*)",
+      "Bash(netlify functions:list:*)"
     ]
   }
 }
