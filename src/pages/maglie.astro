@@ -4,7 +4,25 @@ import { supabase } from '../lib/supabase';
 import { Shirt, Package, ShoppingBag, Search } from 'lucide-astro';
 
 const { data: maglie } = await supabase.from('maglie').select('*');
-const maglieData = maglie || [];
+
+// patches è salvato come JSON string nel database, va parsato in array
+function parsePatches(patches: any): string[] {
+  if (Array.isArray(patches)) return patches;
+  if (typeof patches === 'string') {
+    try { return JSON.parse(patches); } catch { return []; }
+  }
+  return [];
+}
+
+const maglieData = (maglie || []).map(m => ({
+  ...m,
+  patches: parsePatches(m.patches),
+  costo_maglia: m.costo_maglia || 0,
+  costo_patch: m.costo_patch || 0,
+  costo_totale: m.costo_totale || 0,
+  prezzo_vendita: m.prezzo_vendita || 0,
+  profitto: m.profitto || 0,
+}));
 
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + '€';
 
