@@ -198,53 +198,80 @@ async function syncInventoryOnSale(vendita: any) {
         .eq('id', patch.id);
     }
   } else if (categoria === 'Tuta') {
-    // Trova la tuta per nome (formato: "Tipo Squadra Stagione")
-    const { data: tute } = await supabase
-      .from('tute')
-      .select('*')
-      .eq('stato', 'In magazzino');
+    // Trova la tuta per ID (preferito) o nome prodotto
+    let tuta = null;
 
-    if (tute) {
-      // Cerca corrispondenza nel nome prodotto
-      const tuta = tute.find(t =>
-        prodotto.toLowerCase().includes(t.squadra.toLowerCase())
-      );
+    if (prodotto_id) {
+      const { data } = await supabase
+        .from('tute')
+        .select('*')
+        .eq('id', prodotto_id)
+        .single();
+      tuta = data;
+    } else {
+      // Fallback: cerca per nome (compatibilità con vecchie vendite)
+      const { data: tute } = await supabase
+        .from('tute')
+        .select('*')
+        .eq('stato', 'In magazzino');
 
-      if (tuta) {
-        const profitto = (totale || 0) - tuta.costo;
-        await supabase
-          .from('tute')
-          .update({
-            stato: 'Venduto',
-            prezzo_vendita: totale || 0,
-            profitto: profitto
-          })
-          .eq('id', tuta.id);
+      if (tute) {
+        tuta = tute.find(t =>
+          prodotto.toLowerCase().includes(t.squadra.toLowerCase())
+        ) || null;
       }
     }
+
+    if (tuta) {
+      const profitto = (totale || 0) - tuta.costo;
+      await supabase
+        .from('tute')
+        .update({
+          stato: 'Venduto',
+          prezzo_vendita: totale || 0,
+          profitto: profitto
+        })
+        .eq('id', tuta.id);
+    }
   } else if (categoria === 'Maglia') {
-    // Trova la maglia per nome
-    const { data: maglie } = await supabase
-      .from('maglie')
-      .select('*')
-      .neq('stato', 'Venduta');
+    // Trova la maglia per ID (preferito) o nome prodotto
+    let maglia = null;
 
-    if (maglie) {
-      const maglia = maglie.find(m =>
-        prodotto.toLowerCase().includes(m.maglia.toLowerCase())
-      );
+    if (prodotto_id) {
+      const { data } = await supabase
+        .from('maglie')
+        .select('*')
+        .eq('id', prodotto_id)
+        .single();
+      maglia = data;
+    } else {
+      // Fallback: cerca per nome+stagione (compatibilità con vecchie vendite)
+      const { data: maglie } = await supabase
+        .from('maglie')
+        .select('*')
+        .neq('stato', 'Venduta');
 
-      if (maglia) {
-        const profitto = (totale || 0) - maglia.costo_totale;
-        await supabase
-          .from('maglie')
-          .update({
-            stato: 'Venduta',
-            prezzo_vendita: totale || 0,
-            profitto: profitto
-          })
-          .eq('id', maglia.id);
+      if (maglie) {
+        // Match preciso: nome maglia + stagione
+        maglia = maglie.find(m => {
+          const nomeCompleto = `${m.maglia} ${m.stagione}`.toLowerCase();
+          return prodotto.toLowerCase() === nomeCompleto;
+        }) || maglie.find(m =>
+          prodotto.toLowerCase().includes(m.maglia.toLowerCase())
+        ) || null;
       }
+    }
+
+    if (maglia) {
+      const profitto = (totale || 0) - maglia.costo_totale;
+      await supabase
+        .from('maglie')
+        .update({
+          stato: 'Venduta',
+          prezzo_vendita: totale || 0,
+          profitto: profitto
+        })
+        .eq('id', maglia.id);
     }
   }
 }
@@ -489,16 +516,29 @@ export const PUT: APIRoute = async ({ request }) => {
 
 // Ripristina inventario quando viene eliminata una vendita
 async function restoreInventoryOnDeleteSale(vendita: any) {
-  const { categoria, prodotto, quantita, totale } = vendita;
+  const { categoria, prodotto, prodotto_id, quantita, totale } = vendita;
 
   if (categoria === 'Patch') {
-    const { data: patches } = await supabase
-      .from('patch')
-      .select('*')
-      .eq('prodotto', prodotto);
+    // Cerca per ID (preferito) o nome prodotto
+    let patch = null;
 
-    if (patches && patches.length > 0) {
-      const patch = patches[0];
+    if (prodotto_id) {
+      const { data } = await supabase
+        .from('patch')
+        .select('*')
+        .eq('id', prodotto_id)
+        .single();
+      patch = data;
+    } else {
+      // Fallback: cerca per nome (compatibilità con vecchie vendite)
+      const { data: patches } = await supabase
+        .from('patch')
+        .select('*')
+        .eq('prodotto', prodotto);
+      patch = patches?.[0] || null;
+    }
+
+    if (patch) {
       const nuoviVenduti = Math.max(0, (patch.venduti || 0) - (quantita || 1));
       const nuovoRicavo = Math.max(0, (patch.ricavo_vendite || 0) - (totale || 0));
       const nuovoProfitto = nuovoRicavo - (patch.costo_unitario * nuoviVenduti);
@@ -513,9 +553,76 @@ async function restoreInventoryOnDeleteSale(vendita: any) {
         })
         .eq('id', patch.id);
     }
+  } else if (categoria === 'Tuta') {
+    // Ripristina la tuta per ID o nome
+    let tuta = null;
+
+    if (prodotto_id) {
+      const { data } = await supabase
+        .from('tute')
+        .select('*')
+        .eq('id', prodotto_id)
+        .single();
+      tuta = data;
+    } else {
+      const { data: tute } = await supabase
+        .from('tute')
+        .select('*')
+        .eq('stato', 'Venduto');
+      if (tute) {
+        tuta = tute.find(t =>
+          prodotto.toLowerCase().includes(t.squadra.toLowerCase())
+        ) || null;
+      }
+    }
+
+    if (tuta) {
+      await supabase
+        .from('tute')
+        .update({
+          stato: 'In magazzino',
+          prezzo_vendita: 0,
+          profitto: 0
+        })
+        .eq('id', tuta.id);
+    }
+  } else if (categoria === 'Maglia') {
+    // Ripristina la maglia per ID o nome
+    let maglia = null;
+
+    if (prodotto_id) {
+      const { data } = await supabase
+        .from('maglie')
+        .select('*')
+        .eq('id', prodotto_id)
+        .single();
+      maglia = data;
+    } else {
+      const { data: maglie } = await supabase
+        .from('maglie')
+        .select('*')
+        .eq('stato', 'Venduta');
+      if (maglie) {
+        maglia = maglie.find(m => {
+          const nomeCompleto = `${m.maglia} ${m.stagione}`.toLowerCase();
+          return prodotto.toLowerCase() === nomeCompleto;
+        }) || maglie.find(m =>
+          prodotto.toLowerCase().includes(m.maglia.toLowerCase())
+        ) || null;
+      }
+    }
+
+    if (maglia) {
+      await supabase
+        .from('maglie')
+        .update({
+          stato: 'In magazzino',
+          prezzo_vendita: 0,
+          profitto: 0
+        })
+        .eq('id', maglia.id);
+    }
   }
-  // Per tute e maglie, il ripristino è più complesso
-  // perché non sappiamo quale articolo specifico ripristinare
 }
 
 // DELETE - Elimina elemento

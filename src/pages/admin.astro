@@ -598,25 +598,32 @@ import Layout from '../layouts/Layout.astro';
           }).join('');
         } else if (categoria === 'Tuta') {
           // Filtra tute disponibili, ma includi sempre quella attualmente selezionata
-          productOptions = data.tute.filter((t: any) => {
+          const currentTuta = data.tute.find((t: any) => {
             const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
-            const isSelected = value === nome || value?.includes(t.squadra);
-            return t.stato === 'In magazzino' || isSelected;
+            return value === nome || value?.includes(t.squadra);
+          });
+          const currentTutaId = currentTuta?.id;
+          productOptions = data.tute.filter((t: any) => {
+            return t.stato === 'In magazzino' || t.id === currentTutaId;
           }).map((t: any) => {
             const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
-            const selected = value === nome || value?.includes(t.squadra) ? 'selected' : '';
-            return `<option value="${nome}" ${selected}>${nome} [${t.stato}]</option>`;
+            const selected = t.id === currentTutaId ? 'selected' : '';
+            return `<option value="${t.id}" ${selected}>${nome} [${t.stato}]</option>`;
           }).join('');
         } else if (categoria === 'Maglia') {
           // Filtra maglie disponibili, ma includi sempre quella attualmente selezionata
-          productOptions = data.maglie.filter((m: any) => {
+          // Cerca l'ID della maglia attualmente selezionata
+          const currentMaglia = data.maglie.find((m: any) => {
             const nome = `${m.maglia} ${m.stagione}`;
-            const isSelected = value === nome || value?.includes(m.maglia);
-            return m.stato === 'In magazzino' || isSelected;
+            return value === nome || value?.includes(m.maglia);
+          });
+          const currentId = currentMaglia?.id;
+          productOptions = data.maglie.filter((m: any) => {
+            return m.stato === 'In magazzino' || m.id === currentId;
           }).map((m: any) => {
             const nome = `${m.maglia} ${m.stagione}`;
-            const selected = value === nome || value?.includes(m.maglia) ? 'selected' : '';
-            return `<option value="${nome}" ${selected}>${nome} [${m.stato}]</option>`;
+            const selected = m.id === currentId ? 'selected' : '';
+            return `<option value="${m.id}" ${selected}>${nome} [${m.stato}]</option>`;
           }).join('');
         }
 
@@ -743,10 +750,10 @@ import Layout from '../layouts/Layout.astro';
         }).join('');
       } else if (categoria === 'Tuta') {
         const disponibili = data.tute.filter((t: any) => t.stato === 'In magazzino');
-        options = disponibili.map((t: any) => `<option value="${t.tipo} ${t.squadra} ${t.stagione}">${t.tipo} ${t.squadra} ${t.stagione}</option>`).join('');
+        options = disponibili.map((t: any) => `<option value="${t.id}">${t.tipo} ${t.squadra} ${t.stagione}</option>`).join('');
       } else if (categoria === 'Maglia') {
         const disponibili = data.maglie.filter((m: any) => m.stato === 'In magazzino');
-        options = disponibili.map((m: any) => `<option value="${m.maglia} ${m.stagione}">${m.maglia} ${m.stagione}</option>`).join('');
+        options = disponibili.map((m: any) => `<option value="${m.id}">${m.maglia} ${m.stagione}</option>`).join('');
       }
 
       prodSelect.innerHTML = options || '<option value="">Nessun prodotto disponibile</option>';
@@ -848,7 +855,7 @@ import Layout from '../layouts/Layout.astro';
         for (let i = 0; i < prodotti.length; i++) {
           if (!prodotti[i]) continue;
 
-          // Per le patch, il valore è l'ID - trova il nome prodotto
+          // Il valore è l'ID - trova il nome prodotto
           let prodottoNome = prodotti[i];
           let prodottoId = null;
           if (categorie[i] === 'Patch') {
@@ -856,6 +863,18 @@ import Layout from '../layouts/Layout.astro';
             if (patchItem) {
               prodottoNome = patchItem.lotto ? `${patchItem.prodotto} [${patchItem.lotto}]` : patchItem.prodotto;
               prodottoId = patchItem.id;
+            }
+          } else if (categorie[i] === 'Maglia') {
+            const magliaItem = data.maglie.find((m: any) => m.id == prodotti[i]);
+            if (magliaItem) {
+              prodottoNome = `${magliaItem.maglia} ${magliaItem.stagione}`;
+              prodottoId = magliaItem.id;
+            }
+          } else if (categorie[i] === 'Tuta') {
+            const tutaItem = data.tute.find((t: any) => t.id == prodotti[i]);
+            if (tutaItem) {
+              prodottoNome = `${tutaItem.tipo} ${tutaItem.squadra} ${tutaItem.stagione}`;
+              prodottoId = tutaItem.id;
             }
           }
 
@@ -903,6 +922,22 @@ import Layout from '../layouts/Layout.astro';
           if (patchItem) {
             item['prodotto'] = patchItem.lotto ? `${patchItem.prodotto} [${patchItem.lotto}]` : patchItem.prodotto;
             item['prodotto_id'] = patchItem.id;
+          } else {
+            item['prodotto'] = value;
+          }
+        } else if (categoriaValue === 'Maglia') {
+          const magliaItem = data.maglie.find((m: any) => m.id == value);
+          if (magliaItem) {
+            item['prodotto'] = `${magliaItem.maglia} ${magliaItem.stagione}`;
+            item['prodotto_id'] = magliaItem.id;
+          } else {
+            item['prodotto'] = value;
+          }
+        } else if (categoriaValue === 'Tuta') {
+          const tutaItem = data.tute.find((t: any) => t.id == value);
+          if (tutaItem) {
+            item['prodotto'] = `${tutaItem.tipo} ${tutaItem.squadra} ${tutaItem.stagione}`;
+            item['prodotto_id'] = tutaItem.id;
           } else {
             item['prodotto'] = value;
           }
