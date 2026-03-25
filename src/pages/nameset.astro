@@ -1,44 +1,42 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
-import { Tags, Package, ShoppingBag, Search } from 'lucide-astro';
+import { Type, Package, ShoppingBag, Search } from 'lucide-astro';
 
 const { data: patch } = await supabase.from('patch').select('*');
-const patchData = (patch || []).filter(p => !p.prodotto.toLowerCase().includes('nameset'));
+const namesetData = (patch || []).filter(p => p.prodotto.toLowerCase().includes('nameset'));
 
 const formatEuro = (n: number) => n.toFixed(2).replace('.', ',') + '€';
 
 // Calcola totali
-const totaleInMagazzino = patchData.reduce((acc, p) => acc + (p.quantita_iniziale - p.venduti), 0);
-const totaleVenduti = patchData.reduce((acc, p) => acc + p.venduti, 0);
-const totaleProfitto = patchData.reduce((acc, p) => acc + p.profitto, 0);
-const totaleRicavi = patchData.reduce((acc, p) => acc + p.ricavo_vendite, 0);
+const totaleInMagazzino = namesetData.reduce((acc, p) => acc + (p.quantita_iniziale - p.venduti), 0);
+const totaleVenduti = namesetData.reduce((acc, p) => acc + p.venduti, 0);
+const totaleProfitto = namesetData.reduce((acc, p) => acc + p.profitto, 0);
+const totaleRicavi = namesetData.reduce((acc, p) => acc + p.ricavo_vendite, 0);
 
 // Ordinamento: Lotto 2 prima, poi Lotto 1, poi quelli a 0 in magazzino in fondo
-const sortedData = [...patchData].sort((a, b) => {
+const sortedData = [...namesetData].sort((a, b) => {
   const aStock = a.quantita_iniziale - a.venduti;
   const bStock = b.quantita_iniziale - b.venduti;
 
-  // Prima quelli con stock > 0, poi quelli a 0
   if (aStock === 0 && bStock > 0) return 1;
   if (bStock === 0 && aStock > 0) return -1;
 
-  // Tra quelli con stock > 0: Lotto 2 prima di Lotto 1
   const aLotto = parseInt(a.lotto) || 0;
   const bLotto = parseInt(b.lotto) || 0;
-  return bLotto - aLotto; // Ordine decrescente per lotto
+  return bLotto - aLotto;
 });
 ---
 
-<Layout title="Patch">
+<Layout title="Nameset">
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-      <Tags class="w-6 h-6 text-blue-600" />
-      Inventario Patch
+      <Type class="w-6 h-6 text-indigo-600" />
+      Inventario Nameset
     </h1>
     <div class="flex gap-3 text-sm">
-      <div class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+      <div class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
         <Package class="w-4 h-4" />
         <span class="font-semibold">{totaleInMagazzino}</span>
       </div>
@@ -57,7 +55,7 @@ const sortedData = [...patchData].sort((a, b) => {
         type="text"
         id="search-input"
         placeholder="Cerca per nome..."
-        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
       />
     </div>
   </div>
@@ -82,14 +80,14 @@ const sortedData = [...patchData].sort((a, b) => {
           <tr class="hover:bg-slate-50 transition-colors data-row" data-name={p.prodotto.toLowerCase()}>
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-                  <Tags class="w-4 h-4 text-blue-500" />
+                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center">
+                  <Type class="w-4 h-4 text-indigo-500" />
                 </div>
                 <span class="font-medium text-slate-800">{p.prodotto}</span>
               </div>
             </td>
             <td class="px-4 py-3 text-center">
-              <span class={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-semibold ${(p.quantita_iniziale - p.venduti) > 5 ? 'bg-blue-100 text-blue-700' : (p.quantita_iniziale - p.venduti) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+              <span class={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-sm font-semibold ${(p.quantita_iniziale - p.venduti) > 5 ? 'bg-indigo-100 text-indigo-700' : (p.quantita_iniziale - p.venduti) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                 {p.quantita_iniziale - p.venduti}
               </span>
             </td>
@@ -108,10 +106,10 @@ const sortedData = [...patchData].sort((a, b) => {
       </tbody>
       <tfoot class="bg-slate-50 border-t-2 border-slate-200">
         <tr class="font-semibold text-slate-700">
-          <td class="px-4 py-3">Totale ({patchData.length} prodotti)</td>
-          <td class="px-4 py-3 text-center text-blue-700">{totaleInMagazzino}</td>
+          <td class="px-4 py-3">Totale ({namesetData.length} prodotti)</td>
+          <td class="px-4 py-3 text-center text-indigo-700">{totaleInMagazzino}</td>
           <td class="px-4 py-3 text-center">{totaleVenduti}</td>
-          <td class="px-4 py-3 text-center">{patchData.reduce((acc, p) => acc + p.quantita_iniziale, 0)}</td>
+          <td class="px-4 py-3 text-center">{namesetData.reduce((acc, p) => acc + p.quantita_iniziale, 0)}</td>
           <td class="px-4 py-3"></td>
           <td class="px-4 py-3 text-right text-green-600">{formatEuro(totaleRicavi)}</td>
           <td class="px-4 py-3 text-right">

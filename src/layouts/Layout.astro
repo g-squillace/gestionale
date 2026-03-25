@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css'
-import { LayoutDashboard, Tags, Shirt, Award, ShoppingCart, MessageSquare, Settings, Package, LogOut } from 'lucide-astro';
+import { LayoutDashboard, Tags, Shirt, Type, ShoppingCart, MessageSquare, Settings, Package, LogOut } from 'lucide-astro';
 
 interface Props {
   title: string;
@@ -34,13 +34,13 @@ const { title } = Astro.props;
               <Tags class="w-4 h-4" />
               Patch
             </a>
+            <a href="/nameset" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+              <Type class="w-4 h-4" />
+              Nameset
+            </a>
             <a href="/maglie" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
               <Shirt class="w-4 h-4" />
               Maglie
-            </a>
-            <a href="/tute" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
-              <Award class="w-4 h-4" />
-              Tute
             </a>
             <a href="/vendite" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
               <ShoppingCart class="w-4 h-4" />

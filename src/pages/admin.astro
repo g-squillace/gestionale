@@ -26,9 +26,6 @@ import Layout from '../layouts/Layout.astro';
       <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="maglie">
         Maglie
       </button>
-      <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="tute">
-        Tute
-      </button>
       <button class="tab-btn px-6 py-4 font-medium text-slate-600 hover:bg-slate-50 border-b-2 border-transparent data-[active=true]:border-blue-500 data-[active=true]:text-blue-600" data-tab="vendite">
         Vendite
       </button>
@@ -127,20 +124,9 @@ import Layout from '../layouts/Layout.astro';
       { key: 'prezzoVendita', label: 'Prezzo Vendita', type: 'number' },
       { key: 'profitto', label: 'Profitto', type: 'number' },
     ],
-    tute: [
-      { key: 'tipo', label: 'Tipo', type: 'text' },
-      { key: 'squadra', label: 'Squadra', type: 'text' },
-      { key: 'categoria', label: 'Categoria', type: 'text' },
-      { key: 'stagione', label: 'Stagione', type: 'text' },
-      { key: 'descrizione', label: 'Descrizione', type: 'text' },
-      { key: 'costo', label: 'Costo', type: 'number' },
-      { key: 'prezzoVendita', label: 'Prezzo Vendita', type: 'number' },
-      { key: 'stato', label: 'Stato', type: 'select', options: ['In magazzino', 'Venduto'] },
-      { key: 'profitto', label: 'Profitto', type: 'number' },
-    ],
     vendite: [
       { key: 'data', label: 'Data', type: 'date' },
-      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Tuta', 'Maglia'] },
+      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Maglia'] },
       { key: 'prodotto', label: 'Prodotto', type: 'product_select' },
       { key: 'quantita', label: 'Quantita', type: 'number' },
       { key: 'totale', label: 'Totale', type: 'number' },
@@ -154,13 +140,13 @@ import Layout from '../layouts/Layout.astro';
       { key: 'prodotti', label: 'Prodotti', type: 'multi_products' },
     ],
     richieste: [
+      { key: 'descrizione', label: 'Titolo', type: 'text' },
+      { key: 'cliente', label: 'Cliente', type: 'text' },
+      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Maglia'] },
+      { key: 'stato', label: 'Stato', type: 'select', options: ['In attesa', 'Completata', 'Annullata'] },
+      { key: 'budget', label: 'Budget', type: 'number' },
       { key: 'dataRichiesta', label: 'Data Richiesta', type: 'date' },
       { key: 'url', label: 'URL', type: 'text' },
-      { key: 'cliente', label: 'Cliente', type: 'text' },
-      { key: 'categoria', label: 'Categoria', type: 'select', options: ['Patch', 'Tuta', 'Maglia'] },
-      { key: 'descrizione', label: 'Descrizione', type: 'text' },
-      { key: 'budget', label: 'Budget', type: 'number' },
-      { key: 'stato', label: 'Stato', type: 'select', options: ['In attesa', 'Completata', 'Annullata'] },
     ],
   };
 
@@ -174,7 +160,6 @@ import Layout from '../layouts/Layout.astro';
   const categoryColors: Record<string, { bg: string, text: string, dot: string }> = {
     'Patch': { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
     'Maglia': { bg: 'bg-amber-100', text: 'text-amber-800', dot: 'bg-amber-500' },
-    'Tuta': { bg: 'bg-purple-100', text: 'text-purple-800', dot: 'bg-purple-500' },
   };
 
   // Colori per stato maglie/tute
@@ -185,6 +170,9 @@ import Layout from '../layouts/Layout.astro';
     'Venduta': { bg: 'bg-green-100', text: 'text-green-800' },
     'Venduto': { bg: 'bg-green-100', text: 'text-green-800' },
     'Da fare': { bg: 'bg-orange-100', text: 'text-orange-800' },
+    'In attesa': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    'Completata': { bg: 'bg-green-100', text: 'text-green-800' },
+    'Annullata': { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Elementi DOM
@@ -248,13 +236,6 @@ import Layout from '../layouts/Layout.astro';
       items.sort((a: any, b: any) => (statoOrder[a.stato] || 5) - (statoOrder[b.stato] || 5));
     }
 
-    if (currentTab === 'tute') {
-      items.sort((a: any, b: any) => {
-        if (a.stato === 'Venduto' && b.stato !== 'Venduto') return 1;
-        if (b.stato === 'Venduto' && a.stato !== 'Venduto') return -1;
-        return 0;
-      });
-    }
 
     // Ordinamento per la tab vendite
     if (currentTab === 'vendite') {
@@ -300,11 +281,9 @@ import Layout from '../layouts/Layout.astro';
       if (tab === 'vendite' && categoria) {
         if (categoria === 'Patch') return '<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg></div>';
         if (categoria === 'Maglia') return '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>';
-        if (categoria === 'Tuta') return '<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg></div>';
       }
       if (tab === 'patch') return '<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg></div>';
       if (tab === 'maglie') return '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>';
-      if (tab === 'tute') return '<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg></div>';
       if (tab === 'richieste') return '<div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>';
       return '<div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>';
     };
@@ -539,7 +518,6 @@ import Layout from '../layouts/Layout.astro';
                   <label class="block text-xs text-gray-500 mb-1">Categoria</label>
                   <select name="prod_categoria[]" class="prod-categoria w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
                     <option value="Patch">Patch</option>
-                    <option value="Tuta">Tuta</option>
                     <option value="Maglia">Maglia</option>
                   </select>
                 </div>
@@ -595,20 +573,6 @@ import Layout from '../layouts/Layout.astro';
             const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
             const selected = value === p.prodotto || value === `${p.prodotto} [${p.lotto}]` || (item.prodotto_id && item.prodotto_id == p.id) ? 'selected' : '';
             return `<option value="${p.id}" ${selected}>${p.prodotto}${lottoLabel} (${disp} disp.)</option>`;
-          }).join('');
-        } else if (categoria === 'Tuta') {
-          // Filtra tute disponibili, ma includi sempre quella attualmente selezionata
-          const currentTuta = data.tute.find((t: any) => {
-            const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
-            return value === nome || value?.includes(t.squadra);
-          });
-          const currentTutaId = currentTuta?.id;
-          productOptions = data.tute.filter((t: any) => {
-            return t.stato === 'In magazzino' || t.id === currentTutaId;
-          }).map((t: any) => {
-            const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
-            const selected = t.id === currentTutaId ? 'selected' : '';
-            return `<option value="${t.id}" ${selected}>${nome} [${t.stato}]</option>`;
           }).join('');
         } else if (categoria === 'Maglia') {
           // Filtra maglie disponibili, ma includi sempre quella attualmente selezionata
@@ -702,11 +666,6 @@ import Layout from '../layouts/Layout.astro';
               const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
               return `<option value="${p.id}">${p.prodotto}${lottoLabel} (${disp} disp.)</option>`;
             }).join('');
-          } else if (cat === 'Tuta') {
-            options = data.tute.map((t: any) => {
-              const nome = `${t.tipo} ${t.squadra} ${t.stagione}`;
-              return `<option value="${nome}">${nome} [${t.stato}]</option>`;
-            }).join('');
           } else if (cat === 'Maglia') {
             options = data.maglie.map((m: any) => {
               const nome = `${m.maglia} ${m.stagione}`;
@@ -748,9 +707,6 @@ import Layout from '../layouts/Layout.astro';
           const disp = p.inMagazzino ?? (p.quantitaIniziale - p.venduti);
           return `<option value="${p.id}">${p.prodotto}${lottoLabel} (${disp} disp. - ${p.costoUnitario}€)</option>`;
         }).join('');
-      } else if (categoria === 'Tuta') {
-        const disponibili = data.tute.filter((t: any) => t.stato === 'In magazzino');
-        options = disponibili.map((t: any) => `<option value="${t.id}">${t.tipo} ${t.squadra} ${t.stagione}</option>`).join('');
       } else if (categoria === 'Maglia') {
         const disponibili = data.maglie.filter((m: any) => m.stato === 'In magazzino');
         options = disponibili.map((m: any) => `<option value="${m.id}">${m.maglia} ${m.stagione}</option>`).join('');
@@ -870,12 +826,6 @@ import Layout from '../layouts/Layout.astro';
               prodottoNome = `${magliaItem.maglia} ${magliaItem.stagione}`;
               prodottoId = magliaItem.id;
             }
-          } else if (categorie[i] === 'Tuta') {
-            const tutaItem = data.tute.find((t: any) => t.id == prodotti[i]);
-            if (tutaItem) {
-              prodottoNome = `${tutaItem.tipo} ${tutaItem.squadra} ${tutaItem.stagione}`;
-              prodottoId = tutaItem.id;
-            }
           }
 
           const vendita = {
@@ -930,14 +880,6 @@ import Layout from '../layouts/Layout.astro';
           if (magliaItem) {
             item['prodotto'] = `${magliaItem.maglia} ${magliaItem.stagione}`;
             item['prodotto_id'] = magliaItem.id;
-          } else {
-            item['prodotto'] = value;
-          }
-        } else if (categoriaValue === 'Tuta') {
-          const tutaItem = data.tute.find((t: any) => t.id == value);
-          if (tutaItem) {
-            item['prodotto'] = `${tutaItem.tipo} ${tutaItem.squadra} ${tutaItem.stagione}`;
-            item['prodotto_id'] = tutaItem.id;
           } else {
             item['prodotto'] = value;
           }
