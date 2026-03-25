@@ -407,28 +407,35 @@ export const POST: APIRoute = async ({ request }) => {
 // PUT - Modifica elemento esistente
 export const PUT: APIRoute = async ({ request }) => {
   try {
-    const { collection, index, item } = await request.json();
+    const { collection, index, id, item } = await request.json();
 
-    // Per le vendite, usa lo stesso ordinamento della tabella
-    let itemId = null;
+    // Usa l'ID diretto se disponibile, altrimenti fallback all'indice
+    let itemId = id || null;
     let oldMaglia = null;
 
     if (collection === 'vendite') {
-      const { data: vendite } = await supabase
-        .from('vendite')
-        .select('id')
-        .order('data', { ascending: false });
-      if (vendite && index >= 0 && index < vendite.length) {
-        itemId = vendite[index].id;
+      if (!itemId) {
+        const { data: vendite } = await supabase
+          .from('vendite')
+          .select('id')
+          .order('data', { ascending: false });
+        if (vendite && index >= 0 && index < vendite.length) {
+          itemId = vendite[index].id;
+        }
       }
     } else if (collection === 'maglie') {
       // Per le maglie, recupera anche i dati vecchi per gestire le patch
-      const { data: items } = await supabase.from(collection).select('*');
-      if (items && index >= 0 && index < items.length) {
-        oldMaglia = items[index];
-        itemId = items[index].id;
+      if (itemId) {
+        const { data: items } = await supabase.from(collection).select('*').eq('id', itemId);
+        oldMaglia = items?.[0] || null;
+      } else {
+        const { data: items } = await supabase.from(collection).select('*');
+        if (items && index >= 0 && index < items.length) {
+          oldMaglia = items[index];
+          itemId = items[index].id;
+        }
       }
-    } else {
+    } else if (!itemId) {
       const { data: items } = await supabase.from(collection).select('id');
       if (items && index >= 0 && index < items.length) {
         itemId = items[index].id;
@@ -628,31 +635,38 @@ async function restoreInventoryOnDeleteSale(vendita: any) {
 // DELETE - Elimina elemento
 export const DELETE: APIRoute = async ({ request }) => {
   try {
-    const { collection, index } = await request.json();
+    const { collection, index, id } = await request.json();
 
-    // Per le vendite, usa lo stesso ordinamento della tabella (per data decrescente)
+    // Usa l'ID diretto se disponibile, altrimenti fallback all'indice
     let vendita = null;
     let maglia = null;
-    let itemId = null;
+    let itemId = id || null;
 
     if (collection === 'vendite') {
       const { data: vendite } = await supabase
         .from('vendite')
         .select('*')
         .order('data', { ascending: false });
-      if (vendite && index >= 0 && index < vendite.length) {
+      if (itemId) {
+        vendita = vendite?.find((v: any) => v.id === itemId);
+      } else if (vendite && index >= 0 && index < vendite.length) {
         vendita = vendite[index];
         itemId = vendita.id;
       }
     } else if (collection === 'maglie') {
       // Per le maglie, recupera i dati per ripristinare le patch
-      const { data: items } = await supabase.from(collection).select('*');
-      if (items && index >= 0 && index < items.length) {
-        maglia = items[index];
-        itemId = items[index].id;
+      if (itemId) {
+        const { data: items } = await supabase.from(collection).select('*').eq('id', itemId);
+        maglia = items?.[0] || null;
+      } else {
+        const { data: items } = await supabase.from(collection).select('*');
+        if (items && index >= 0 && index < items.length) {
+          maglia = items[index];
+          itemId = items[index].id;
+        }
       }
-    } else {
-      // Per altre collezioni, prendi l'ID dall'indice
+    } else if (!itemId) {
+      // Fallback all'indice solo se non c'è l'ID
       const { data: items } = await supabase.from(collection).select('id');
       if (items && index >= 0 && index < items.length) {
         itemId = items[index].id;

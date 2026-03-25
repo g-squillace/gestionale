@@ -905,10 +905,11 @@ import Layout from '../layouts/Layout.astro';
 
     try {
       if (editingIndex >= 0) {
+        const editId = data[currentTab][editingIndex]?.id;
         await fetch('/api/data', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ collection: currentTab, index: editingIndex, item })
+          body: JSON.stringify({ collection: currentTab, index: editingIndex, id: editId, item })
         });
         showToast('Elemento modificato con successo');
       } else {
@@ -929,12 +930,14 @@ import Layout from '../layouts/Layout.astro';
   // Elimina elemento
   async function deleteItem(index: number) {
     if (!confirm('Sei sicuro di voler eliminare questo elemento?')) return;
+    const item = data[currentTab][index];
+    const id = item?.id;
 
     try {
       await fetch('/api/data', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collection: currentTab, index })
+        body: JSON.stringify({ collection: currentTab, index, id })
       });
       showToast('Elemento eliminato con successo');
       await loadData();
