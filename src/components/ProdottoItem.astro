@@ -1,0 +1,76 @@
+---
+import type { Prodotto } from '../lib/supabase';
+
+interface Props {
+  prodotto: Prodotto;
+}
+
+const { prodotto: p } = Astro.props;
+
+const euro = (n: number) =>
+  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n || 0);
+---
+
+<li
+  data-id={p.id}
+  data-tipo={p.tipo}
+  data-titolo={p.titolo}
+  data-descrizione={p.descrizione}
+  data-prezzo={p.prezzo_acquisto}
+  data-quantita={p.quantita}
+  class:list={[
+    'rounded-xl border p-4 shadow-sm transition',
+    p.quantita <= 0 ? 'bg-slate-200 border-slate-300 opacity-60' : 'bg-white border-slate-200',
+  ]}
+>
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h3 class="font-semibold break-words flex items-center gap-2 flex-wrap">
+        <span class="js-titolo">{p.titolo}</span>
+        <span class:list={['js-esaurito text-xs font-bold uppercase tracking-wide bg-slate-400 text-white px-2 py-0.5 rounded', p.quantita <= 0 ? '' : 'hidden']}>
+          Esaurito
+        </span>
+      </h3>
+      <details class:list={['mt-1 group', p.descrizione ? '' : 'hidden']}>
+        <summary class="text-sm text-slate-500 cursor-pointer select-none list-none inline-flex items-center gap-1 hover:text-slate-700 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900 rounded">
+          <span class="transition-transform group-open:rotate-90">›</span> Descrizione
+        </summary>
+        <p class="text-sm text-slate-600 mt-1 whitespace-pre-wrap break-words">{p.descrizione}</p>
+      </details>
+      <p class="text-sm text-slate-500 mt-2">
+        Acquisto: <span class="font-medium text-slate-700">{euro(p.prezzo_acquisto)}</span>
+      </p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button
+        class="js-dec w-9 h-9 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold text-lg disabled:opacity-40 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        aria-label="Diminuisci quantità"
+        disabled={p.quantita <= 0}
+      >
+        −
+      </button>
+      <span class="js-qta w-10 text-center font-bold text-lg tabular-nums">{p.quantita}</span>
+      <button
+        class="js-inc w-9 h-9 rounded-lg bg-slate-200 hover:bg-slate-300 font-bold text-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        aria-label="Aumenta quantità"
+      >
+        +
+      </button>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button class="js-copy-titolo text-sm bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-2 rounded-lg font-medium focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+      Copia titolo
+    </button>
+    <button class="js-copy-descrizione text-sm bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-2 rounded-lg font-medium focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+      Copia descrizione
+    </button>
+    <button class="js-edit text-sm text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg font-medium ml-auto focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-slate-900">
+      Modifica
+    </button>
+    <button class="js-delete text-sm text-red-600 hover:text-red-700 px-3 py-2 rounded-lg font-medium focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+      Elimina
+    </button>
+  </div>
+</li>
