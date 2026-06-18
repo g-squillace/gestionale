@@ -161,6 +161,29 @@ document.getElementById('prodotti-area')?.addEventListener('click', async (e) =>
   }
 });
 
+const search = document.getElementById('search') as HTMLInputElement | null;
+function applySearch() {
+  const q = (search?.value ?? '').trim().toLowerCase();
+  document.querySelectorAll<HTMLElement>('ul[data-list]').forEach((ul) => {
+    const items = ul.querySelectorAll<HTMLElement>('li[data-id]');
+    let visible = 0;
+    items.forEach((li) => {
+      const match = !q || (li.dataset.titolo || '').toLowerCase().includes(q);
+      li.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    const empty = ul.parentElement?.querySelector('.js-empty') as HTMLElement | null;
+    if (!empty) return;
+    if (items.length > 0 && visible === 0) {
+      empty.textContent = 'Nessun risultato.';
+      empty.classList.remove('hidden');
+    } else if (items.length > 0) {
+      empty.classList.add('hidden');
+    }
+  });
+}
+search?.addEventListener('input', applySearch);
+
 const formRichiesta = document.getElementById('form-richiesta') as HTMLFormElement;
 formRichiesta?.addEventListener('submit', async (e) => {
   e.preventDefault();
